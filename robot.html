@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Recolector PET - Sistema de Gestión</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #111;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --accent: #007aff;
+            --accent-green: #34c759;
+            --accent-orange: #ff9500;
+            --accent-red: #ff3b30;
+            --accent-purple: #af52de;
+            --border-radius: 12px;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent), var(--accent-green));
+            z-index: 1;
+        }
+        
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+        
+        .brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(175, 82, 222, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .header-right {
+            text-align: right;
+            z-index: 2;
+        }
+        
+        .robot-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
+        }
+        
+        .robot-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .location-bar {
+            background: rgba(30, 30, 32, 0.8);
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            font-size: 0.9rem;
+        }
+        
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .location-info i {
+            color: var(--accent);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .card h2 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i {
+            color: var(--accent);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            background-color: rgba(60, 60, 67, 0.2);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            border-radius: 10px;
+            font-size: 16px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: rgba(60, 60, 67, 0.3);
+        }
+        
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .route-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .route-option {
+            background: rgba(60, 60, 67, 0.2);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .route-option:hover {
+            background: rgba(60, 60, 67, 0.3);
+        }
+        
+        .route-option.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .route-option i {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .time-box {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .time-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .time-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background: #0a84ff;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: rgba(60, 60, 67, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #start-route {
+            background: var(--accent-green);
+        }
+        
+        #start-route:hover {
+            background: #30d158;
+        }
+        
+        #programmed-route {
+            background: var(--accent-orange);
+            margin-top: 10px;
+        }
+        
+        #programmed-route:hover {
+            background: #ff9f0a;
+        }
+        
+        #emergency-stop {
+            background: var(--accent-red);
+            margin-top: 10px;
+        }
+        
+        #emergency-stop:hover {
+            background: #ff453a;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(60, 60, 67, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(60, 60, 67, 0.3);
+            border-color: var(--accent);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            z-index: 1;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(60, 60, 67, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .log-entry {
+            padding: 12px;
+            border-bottom: 1px solid rgba(60, 60, 67, 0.4);
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: var(--accent);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .log-message {
+            color: var(--text-secondary);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-top: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        /* Estilo para la barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0a84ff;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .header-left, .header-right {
+                text-align: center;
+            }
+            
+            .robot-status {
+                justify-content: center;
+            }
+            
+            .route-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .location-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .manual-controls {
+                flex-direction: column;
+            }
+            
+            .map-controls {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .robot-schema {
+                flex-direction: column;
+            }
+        }
+        
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        /* Estilo para el ícono personalizado del robot */
+        .robot-icon {
+            transition: transform 0.5s ease;
+        }
+        
+        /* Efecto de brillo para elementos importantes */
+        .glow-effect {
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent);
+            }
+            to {
+                box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+            }
+        }
+        
+        /* Controles manuales */
+        .manual-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .arm-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 10px;
+            gap: 10px;
+        }
+        
+        .arm-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .arm-status.inactive .arm-indicator {
+            background-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(17, 17, 17, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .speed-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .speed-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .emergency-active {
+            animation: emergencyFlash 1s infinite;
+        }
+        
+        @keyframes emergencyFlash {
+            0%, 100% { background-color: var(--bg-card); }
+            50% { background-color: rgba(255, 59, 48, 0.3); }
+        }
+        
+        /* Controles en el mapa */
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .map-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .map-btn:hover {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .map-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .map-btn.play {
+            background: var(--accent-green);
+        }
+        
+        .map-btn.stop {
+            background: var(--accent-red);
+        }
+        
+        /* Panel de información en el mapa */
+        .map-info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(17, 17, 17, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 250px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+        }
+        
+        .info-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Esquema del robot */
+        .robot-schema {
+            display: flex;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        
+        .robot-base {
+            flex: 1;
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .robot-part {
+            margin-bottom: 15px;
+        }
+        
+        .part-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .part-components {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .component {
+            background: rgba(60, 60, 67, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .component-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .component-status {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-ok {
+            color: var(--accent-green);
+        }
+        
+        .status-warning {
+            color: var(--accent-orange);
+        }
+        
+        .status-error {
+            color: var(--accent-red);
+        }
+        
+        /* Visualización de ruedas */
+        .wheels-visual {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .wheel-visual {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(60, 60, 67, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .wheel-visual.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .wheel-visual.error {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        .wheel-visual.warning {
+            background: var(--accent-orange);
+            box-shadow: 0 0 8px var(--accent-orange);
+        }
+        
+        .wheel-label {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        /* Visualización del brazo robótico */
+        .arm-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .arm-part {
+            width: 30px;
+            height: 30px;
+            background: rgba(60, 60, 67, 0.3);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .arm-part.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .arm-part.error {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        .arm-part.warning {
+            background: var(--accent-orange);
+            box-shadow: 0 0 8px var(--accent-orange);
+        }
+        
+        .arm-connector {
+            width: 5px;
+            height: 15px;
+            background: var(--accent);
+        }
+        
+        .arm-label {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        /* Visualización de cámara */
+        .camera-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .camera-body {
+            width: 40px;
+            height: 30px;
+            background: rgba(60, 60, 67, 0.3);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .camera-body.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .camera-lens {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #000;
+            border: 2px solid #333;
+        }
+        
+        .camera-motor {
+            width: 20px;
+            height: 10px;
+            background: rgba(60, 60, 67, 0.3);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: var(--text-primary);
+        }
+        
+        .camera-motor.active {
+            background: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <div class="brand">SEDNA</div>
+                <div class="subtitle">Centro de Control - Robot Recolector PET</div>
+            </div>
+            <div class="header-right">
+                <div class="robot-name">EcoBot-247</div>
+                <div class="robot-status">
+                    <span class="status-indicator"></span>
+                    <span id="system-status">Sistema Operativo</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="location-bar">
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Lanco, Región de Los Ríos, Chile</span>
+            </div>
+            <div class="location-info">
+                <i class="fas fa-satellite"></i>
+                <span>Conectado vía 5G - Latencia: 32ms</span>
+            </div>
+            <div class="location-info">
+                <i class="fas fa-clock"></i>
+                <span id="mission-time">Tiempo de misión: 00:00:00</span>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-route"></i> Control de Navegación</h2>
+                <div class="input-group">
+                    <label for="current-location"><i class="fas fa-map-marker-alt"></i> Ubicación Actual</label>
+                    <input type="text" id="current-location" placeholder="Ej: Avenida Principal 123" value="Municipalidad de Lanco">
+                </div>
+                <div class="input-group">
+                    <label for="destination"><i class="fas fa-flag-checkered"></i> Destino</label>
+                    <input type="text" id="destination" placeholder="Ej: Centro de Reciclaje" value="Plaza de Armas">
+                </div>
+                
+                <div class="input-group">
+                    <label><i class="fas fa-route"></i> Tipo de Ruta</label>
+                    <div class="route-options">
+                        <div class="route-option active" data-route="optimal">
+                            <i class="fas fa-bolt"></i>
+                            <span>Óptima</span>
+                        </div>
+                        <div class="route-option" data-route="shortest">
+                            <i class="fas fa-route"></i>
+                            <span>Más Corta</span>
+                        </div>
+                        <div class="route-option" data-route="ecologic">
+                            <i class="fas fa-leaf"></i>
+                            <span>Ecológica</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-info">
+                    <div class="time-box">
+                        <div class="time-label">Distancia Total</div>
+                        <div class="time-value" id="distance">0 km</div>
+                    </div>
+                    <div class="time-box">
+                        <div class="time-label">Batería Estimada</div>
+                        <div class="time-value" id="battery-consumed">0%</div>
+                    </div>
+                    <div class="time-box">
+                        <div class="time-label">Tiempo Estimado</div>
+                        <div class="time-value" id="travel-time">0 min</div>
+                    </div>
+                </div>
+                
+                <button id="calculate-route">
+                    <i class="fas fa-calculator"></i> Calcular Ruta
+                </button>
+                <button id="start-route" style="display: none; margin-top: 10px;">
+                    <i class="fas fa-play"></i> Iniciar Recorrido
+                </button>
+                <button id="programmed-route">
+                    <i class="fas fa-calendar-alt"></i> Ruta Programada
+                </button>
+                <button id="emergency-stop">
+                    <i class="fas fa-exclamation-triangle"></i> Parada de Emergencia
+                </button>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-microchip"></i> Estado del Robot</h2>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="battery-level">85%</div>
+                        <div class="stat-label"><i class="fas fa-battery-three-quarters"></i> Batería</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="current-speed">0 km/h</div>
+                        <div class="stat-label"><i class="fas fa-tachometer-alt"></i> Velocidad</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="pet-bottles">0</div>
+                        <div class="stat-label"><i class="fas fa-wine-bottle"></i> Botellas Totales</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="pet-weight">0 kg</div>
+                        <div class="stat-label"><i class="fas fa-weight-hanging"></i> Peso Acumulado</div>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="km-traveled">0.0</div>
+                        <div class="stat-label"><i class="fas fa-road"></i> Km Recorridos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="battery-used">0%</div>
+                        <div class="stat-label"><i class="fas fa-bolt"></i> Batería Usada</div>
+                    </div>
+                </div>
+                
+                <div class="arm-status" id="arm-status">
+                    <div class="arm-indicator"></div>
+                    <span>Brazo robótico: ACTIVO</span>
+                </div>
+                
+                <h3 style="margin-top: 20px;"><i class="fas fa-gamepad"></i> Control Manual</h3>
+                <div class="manual-controls">
+                    <button class="control-btn" id="btn-left"><i class="fas fa-arrow-left"></i></button>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="control-btn" id="btn-forward"><i class="fas fa-arrow-up"></i></button>
+                        <button class="control-btn" id="btn-backward"><i class="fas fa-arrow-down"></i></button>
+                    </div>
+                    <button class="control-btn" id="btn-right"><i class="fas fa-arrow-right"></i></button>
+                    <button class="control-btn" id="btn-stop"><i class="fas fa-stop"></i></button>
+                    <button class="control-btn" id="btn-arm"><i class="fas fa-hand-paper"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Esquema del robot con todos los componentes -->
+        <div class="card">
+            <h2><i class="fas fa-robot"></i> Estado de Componentes</h2>
+            
+            <div class="robot-schema">
+                <div class="robot-base">
+                    <div class="part-title">
+                        <i class="fas fa-cog"></i>
+                        <span>Sistema de Tracción</span>
+                    </div>
+                    
+                    <div class="wheels-visual">
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-1">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">DD</div>
+                            </div>
+                        </div>
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-2">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">DT</div>
+                            </div>
+                        </div>
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-3">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">TD</div>
+                            </div>
+                        </div>
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-4">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">TT</div>
+                            </div>
+                        </div>
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-5">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">CD</div>
+                            </div>
+                        </div>
+                        <div class="wheel-item">
+                            <div class="wheel-visual active" id="wheel-6">
+                                <i class="fas fa-circle"></i>
+                                <div class="wheel-label">CT</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="part-components">
+                        <div class="component">
+                            <div class="component-name">Motor DD</div>
+                            <div class="component-status status-ok" id="motor-dd">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor DT</div>
+                            <div class="component-status status-ok" id="motor-dt">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor TD</div>
+                            <div class="component-status status-ok" id="motor-td">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor TT</div>
+                            <div class="component-status status-ok" id="motor-tt">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor CD</div>
+                            <div class="component-status status-ok" id="motor-cd">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor CT</div>
+                            <div class="component-status status-ok" id="motor-ct">OK</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="robot-base">
+                    <div class="part-title">
+                        <i class="fas fa-hand-paper"></i>
+                        <span>Brazo Robótico</span>
+                    </div>
+                    
+                    <div class="arm-visual">
+                        <div class="arm-part active" id="arm-base">
+                            <div class="arm-label">Base</div>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="arm-connector"></div>
+                        <div class="arm-part active" id="arm-shoulder">
+                            <div class="arm-label">Hombro</div>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="arm-connector"></div>
+                        <div class="arm-part active" id="arm-elbow">
+                            <div class="arm-label">Codo</div>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="arm-connector"></div>
+                        <div class="arm-part active" id="arm-wrist">
+                            <div class="arm-label">Muñeca</div>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="arm-connector"></div>
+                        <div class="arm-part active" id="arm-gripper">
+                            <div class="arm-label">Pinza</div>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="part-components">
+                        <div class="component">
+                            <div class="component-name">Motor Base</div>
+                            <div class="component-status status-ok" id="motor-arm-base">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Hombro</div>
+                            <div class="component-status status-ok" id="motor-arm-shoulder">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Codo</div>
+                            <div class="component-status status-ok" id="motor-arm-elbow">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Muñeca</div>
+                            <div class="component-status status-ok" id="motor-arm-wrist">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Pinza</div>
+                            <div class="component-status status-ok" id="motor-arm-gripper">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Rotación</div>
+                            <div class="component-status status-ok" id="motor-arm-rotation">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Extensión</div>
+                            <div class="component-status status-ok" id="motor-arm-extension">OK</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="robot-base">
+                    <div class="part-title">
+                        <i class="fas fa-camera"></i>
+                        <span>Sistema de Cámara</span>
+                    </div>
+                    
+                    <div class="camera-visual">
+                        <div class="camera-body active" id="camera-body">
+                            <div class="camera-lens"></div>
+                        </div>
+                        <div style="display: flex; gap: 15px;">
+                            <div class="camera-motor active" id="camera-motor-1">Pan</div>
+                            <div class="camera-motor active" id="camera-motor-2">Tilt</div>
+                        </div>
+                    </div>
+                    
+                    <div class="part-components">
+                        <div class="component">
+                            <div class="component-name">Cámara Principal</div>
+                            <div class="component-status status-ok" id="camera-main">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Pan</div>
+                            <div class="component-status status-ok" id="motor-cam-pan">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Motor Tilt</div>
+                            <div class="component-status status-ok" id="motor-cam-tilt">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Zoom</div>
+                            <div class="component-status status-ok" id="camera-zoom">OK</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Enfoque</div>
+                            <div class="component-status status-ok" id="camera-focus">OK</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="map-container" style="position: relative;">
+            <div id="map"></div>
+            <div class="map-overlay">
+                <div class="speed-display" id="map-speed">0</div>
+                <div class="speed-label">km/h</div>
+            </div>
+            
+            <!-- Panel de información en el mapa -->
+            <div class="map-info-panel">
+                <div class="info-row">
+                    <span class="info-label">Velocidad:</span>
+                    <span class="info-value" id="info-speed">0 km/h</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Distancia:</span>
+                    <span class="info-value" id="info-distance">0.0 km</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Batería:</span>
+                    <span class="info-value" id="info-battery">85%</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Botellas:</span>
+                    <span class="info-value" id="info-bottles">0</span>
+                </div>
+            </div>
+            
+            <!-- Controles en el mapa -->
+            <div class="map-controls">
+                <button class="map-btn play" id="map-play" title="Iniciar recorrido">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="map-btn stop" id="map-stop" title="Detener" style="display: none;">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2><i class="fas fa-clipboard-list"></i> Registro de Actividades</h2>
+            <div class="log-container" id="activity-log">
+                <div class="log-entry">
+                    <span class="log-time">[00:00:00]</span>
+                    <span class="log-message">Sistema iniciado. Robot listo para operar.</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Sistema de Gestión para Robot Recolector PET &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Inicialización del mapa
+        const map = L.map('map').setView([-39.456150, -72.768835], 16); // Coordenadas de Lanco, Chile
+
+        // Añadir capa de OpenStreetMap con estilo más oscuro
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            maxZoom: 20
+        }).addTo(map);
+        
+        // Añadir capa de etiquetas por separado para mejor control
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            maxZoom: 20
+        }).addTo(map);
+        
+        // Variables para el estado del robot
+        let batteryLevel = 85;
+        let petBottles = 0;
+        let petWeight = 0;
+        let currentRoute = null;
+        let simulationInterval = null;
+        let missionTimerInterval = null;
+        let currentMarker = null;
+        let routeCoordinates = [];
+        let currentRouteIndex = 0;
+        let selectedRouteType = 'optimal';
+        let currentAngle = 0;
+        let startTime = null;
+        let estimatedEndTime = null;
+        let totalDistance = 0;
+        let batteryConsumed = 0;
+        let initialBattery = 85;
+        let currentSpeed = 0;
+        let isEmergencyStop = false;
+        let isArmActive = true;
+        let isManualControl = false;
+        let missionTime = 0; // en segundos
+        let isPlaying = false;
+        
+        // Estados de los componentes
+        let wheelStatus = [
+            { id: 'wheel-1', name: 'DD', status: 'active', motor: 'motor-dd' },
+            { id: 'wheel-2', name: 'DT', status: 'active', motor: 'motor-dt' },
+            { id: 'wheel-3', name: 'TD', status: 'active', motor: 'motor-td' },
+            { id: 'wheel-4', name: 'TT', status: 'active', motor: 'motor-tt' },
+            { id: 'wheel-5', name: 'CD', status: 'active', motor: 'motor-cd' },
+            { id: 'wheel-6', name: 'CT', status: 'active', motor: 'motor-ct' }
+        ];
+        
+        let armStatus = [
+            { id: 'arm-base', name: 'Base', status: 'active', motor: 'motor-arm-base' },
+            { id: 'arm-shoulder', name: 'Hombro', status: 'active', motor: 'motor-arm-shoulder' },
+            { id: 'arm-elbow', name: 'Codo', status: 'active', motor: 'motor-arm-elbow' },
+            { id: 'arm-wrist', name: 'Muñeca', status: 'active', motor: 'motor-arm-wrist' },
+            { id: 'arm-gripper', name: 'Pinza', status: 'active', motor: 'motor-arm-gripper' },
+            { id: 'motor-arm-rotation', name: 'Rotación', status: 'active', motor: 'motor-arm-rotation' },
+            { id: 'motor-arm-extension', name: 'Extensión', status: 'active', motor: 'motor-arm-extension' }
+        ];
+        
+        let cameraStatus = [
+            { id: 'camera-body', name: 'Cámara', status: 'active', motor: 'camera-main' },
+            { id: 'camera-motor-1', name: 'Pan', status: 'active', motor: 'motor-cam-pan' },
+            { id: 'camera-motor-2', name: 'Tilt', status: 'active', motor: 'motor-cam-tilt' }
+        ];
+        
+        // Elementos DOM
+        const currentLocationInput = document.getElementById('current-location');
+        const destinationInput = document.getElementById('destination');
+        const calculateRouteBtn = document.getElementById('calculate-route');
+        const startRouteBtn = document.getElementById('start-route');
+        const programmedRouteBtn = document.getElementById('programmed-route');
+        const emergencyStopBtn = document.getElementById('emergency-stop');
+        const batteryElement = document.getElementById('battery-level');
+        const bottlesElement = document.getElementById('pet-bottles');
+        const weightElement = document.getElementById('pet-weight');
+        const timeElement = document.getElementById('travel-time');
+        const activityLog = document.getElementById('activity-log');
+        const routeOptions = document.querySelectorAll('.route-option');
+        const startTimeElement = document.getElementById('start-time');
+        const endTimeElement = document.getElementById('end-time');
+        const distanceElement = document.getElementById('distance');
+        const batteryConsumedElement = document.getElementById('battery-consumed');
+        const kmTraveledElement = document.getElementById('km-traveled');
+        const batteryUsedElement = document.getElementById('battery-used');
+        const currentSpeedElement = document.getElementById('current-speed');
+        const mapSpeedElement = document.getElementById('map-speed');
+        const armStatusElement = document.getElementById('arm-status');
+        const systemStatusElement = document.getElementById('system-status');
+        const missionTimeElement = document.getElementById('mission-time');
+        const mapPlayBtn = document.getElementById('map-play');
+        const mapStopBtn = document.getElementById('map-stop');
+        
+        // Elementos del panel de información
+        const infoSpeedElement = document.getElementById('info-speed');
+        const infoDistanceElement = document.getElementById('info-distance');
+        const infoBatteryElement = document.getElementById('info-battery');
+        const infoBottlesElement = document.getElementById('info-bottles');
+        
+        // Botones de control manual
+        const btnForward = document.getElementById('btn-forward');
+        const btnBackward = document.getElementById('btn-backward');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnStop = document.getElementById('btn-stop');
+        const btnArm = document.getElementById('btn-arm');
+        
+        // Crear ícono personalizado para el robot con dirección
+        function createRobotIcon(angle) {
+            // Crear un elemento HTML personalizado para el icono
+            const iconElement = document.createElement('div');
+            iconElement.innerHTML = `
+                <div style="position: relative; transform: rotate(${angle}deg); transition: transform 0.5s ease;">
+                    <img src="robot.png" width="40" height="40" 
+                         style="filter: drop-shadow(0 0 12px rgba(0, 122, 255, 0.8));">
+                </div>
+
+            `;
+            
+            return L.divIcon({
+                html: iconElement.innerHTML,
+                className: 'robot-icon',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+        }
+        
+        // Función para calcular distancia entre dos coordenadas (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio de la Tierra en km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+            return distance;
+        }
+        
+        // Función para calcular el ángulo entre dos puntos
+        function calculateAngle(from, to) {
+            const dy = to[0] - from[0];
+            const dx = to[1] - from[1];
+            return Math.atan2(dy, dx) * 180 / Math.PI;
+        }
+        
+        // Función para formatear el tiempo (segundos a HH:MM:SS)
+        function formatTimeFromSeconds(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Función para formatear la hora
+        function formatTime(date) {
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+        }
+        
+        // Función para agregar entradas al registro de actividades
+        function addLogEntry(message) {
+            const now = new Date();
+            const timeString = `[${formatTime(now)}]`;
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<span class="log-time">${timeString}</span><span class="log-message">${message}</span>`;
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
+        
+        // Función para mostrar notificación
+        function showNotification(message, icon = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Función para actualizar la velocidad del robot
+        function updateSpeed(speed) {
+            currentSpeed = speed;
+            currentSpeedElement.textContent = `${speed} km/h`;
+            mapSpeedElement.textContent = speed;
+            infoSpeedElement.textContent = `${speed} km/h`;
+        }
+        
+        // Función para actualizar el panel de información
+        function updateInfoPanel() {
+            infoDistanceElement.textContent = `${parseFloat(kmTraveledElement.textContent).toFixed(1)} km`;
+            infoBatteryElement.textContent = `${batteryLevel}%`;
+            infoBottlesElement.textContent = petBottles;
+        }
+        
+        // Función para actualizar botones de play/stop
+        function updatePlayStopButtons() {
+            if (isPlaying) {
+                startRouteBtn.style.display = 'none';
+                mapPlayBtn.style.display = 'none';
+                mapStopBtn.style.display = 'flex';
+            } else {
+                startRouteBtn.style.display = 'block';
+                mapPlayBtn.style.display = 'flex';
+                mapStopBtn.style.display = 'none';
+            }
+        }
+        
+        // Función para actualizar el estado de los componentes
+        function updateComponentStatus() {
+            // Actualizar ruedas
+            wheelStatus.forEach(wheel => {
+                const element = document.getElementById(wheel.id);
+                const motorElement = document.getElementById(wheel.motor);
+                
+                if (element && motorElement) {
+                    element.className = `wheel-visual ${wheel.status}`;
+                    motorElement.className = `component-status status-${wheel.status === 'active' ? 'ok' : wheel.status}`;
+                    motorElement.textContent = wheel.status === 'active' ? 'OK' : 'FALLO';
+                }
+            });
+            
+            // Actualizar brazo robótico
+            armStatus.forEach(arm => {
+                const element = document.getElementById(arm.id);
+                const motorElement = document.getElementById(arm.motor);
+                
+                if (element && motorElement) {
+                    element.className = `arm-part ${arm.status}`;
+                    motorElement.className = `component-status status-${arm.status === 'active' ? 'ok' : arm.status}`;
+                    motorElement.textContent = arm.status === 'active' ? 'OK' : 'FALLO';
+                }
+            });
+            
+            // Actualizar cámara
+            cameraStatus.forEach(camera => {
+                const element = document.getElementById(camera.id);
+                const motorElement = document.getElementById(camera.motor);
+                
+                if (element && motorElement) {
+                    element.className = camera.id.includes('camera-body') ? 
+                        `camera-body ${camera.status}` : 
+                        `camera-motor ${camera.status}`;
+                        
+                    motorElement.className = `component-status status-${camera.status === 'active' ? 'ok' : camera.status}`;
+                    motorElement.textContent = camera.status === 'active' ? 'OK' : 'FALLO';
+                }
+            });
+        }
+        
+        // Función para simular fallos aleatorios en componentes
+        function simulateRandomFailures() {
+            // 2% de probabilidad de fallo en cualquier componente
+            if (Math.random() < 0.02) {
+                // Seleccionar un tipo de componente aleatorio
+                const componentType = Math.floor(Math.random() * 3);
+                
+                if (componentType === 0) {
+                    // Fallo en rueda
+                    const randomIndex = Math.floor(Math.random() * wheelStatus.length);
+                    wheelStatus[randomIndex].status = 'error';
+                    addLogEntry(`Fallo detectado en rueda ${wheelStatus[randomIndex].name}`);
+                    showNotification(`Fallo en rueda ${wheelStatus[randomIndex].name}`, 'exclamation-triangle');
+                } else if (componentType === 1) {
+                    // Fallo en brazo
+                    const randomIndex = Math.floor(Math.random() * armStatus.length);
+                    armStatus[randomIndex].status = 'error';
+                    addLogEntry(`Fallo detectado en motor ${armStatus[randomIndex].name}`);
+                    showNotification(`Fallo en motor ${armStatus[randomIndex].name}`, 'exclamation-triangle');
+                } else {
+                    // Fallo en cámara
+                    const randomIndex = Math.floor(Math.random() * cameraStatus.length);
+                    cameraStatus[randomIndex].status = 'error';
+                    addLogEntry(`Fallo detectado en ${cameraStatus[randomIndex].name}`);
+                    showNotification(`Fallo en ${cameraStatus[randomIndex].name}`, 'exclamation-triangle');
+                }
+                
+                updateComponentStatus();
+            }
+        }
+        
+        // Función para activar/desactivar el brazo robótico
+        function toggleArm() {
+            isArmActive = !isArmActive;
+            if (isArmActive) {
+                armStatusElement.classList.remove('inactive');
+                armStatusElement.querySelector('span').textContent = 'Brazo robótico: ACTIVO';
+                
+                // Reactivar todos los motores del brazo
+                armStatus.forEach(arm => {
+                    arm.status = 'active';
+                });
+                
+                addLogEntry('Brazo robótico activado');
+                showNotification('Brazo robótico activado', 'hand-paper');
+            } else {
+                armStatusElement.classList.add('inactive');
+                armStatusElement.querySelector('span').textContent = 'Brazo robótico: INACTIVO';
+                
+                // Desactivar todos los motores del brazo
+                armStatus.forEach(arm => {
+                    arm.status = 'error';
+                });
+                
+                addLogEntry('Brazo robótico desactivado');
+                showNotification('Brazo robótico desactivado', 'hand-paper');
+            }
+            
+            updateComponentStatus();
+        }
+        
+        // Función para parada de emergencia
+        function emergencyStop() {
+            if (isEmergencyStop) {
+                // Reactivar el sistema
+                isEmergencyStop = false;
+                emergencyStopBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Parada de Emergencia';
+                emergencyStopBtn.style.background = 'var(--accent-red)';
+                document.body.classList.remove('emergency-active');
+                systemStatusElement.textContent = 'Sistema Operativo';
+                
+                // Reactivar todos los componentes
+                wheelStatus.forEach(wheel => {
+                    wheel.status = 'active';
+                });
+                
+                armStatus.forEach(arm => {
+                    arm.status = 'active';
+                });
+                
+                cameraStatus.forEach(camera => {
+                    camera.status = 'active';
+                });
+                
+                updateComponentStatus();
+                
+                addLogEntry('Sistema reactivado después de parada de emergencia');
+                showNotification('Sistema reactivado', 'check-circle');
+            } else {
+                // Activar parada de emergencia
+                isEmergencyStop = true;
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                isPlaying = false;
+                updatePlayStopButtons();
+                emergencyStopBtn.innerHTML = '<i class="fas fa-play"></i> Reactivar Sistema';
+                emergencyStopBtn.style.background = 'var(--accent-green)';
+                document.body.classList.add('emergency-active');
+                updateSpeed(0);
+                systemStatusElement.textContent = 'PARADA DE EMERGENCIA';
+                
+                // Desactivar todos los componentes
+                wheelStatus.forEach(wheel => {
+                    wheel.status = 'error';
+                });
+                
+                armStatus.forEach(arm => {
+                    arm.status = 'error';
+                });
+                
+                cameraStatus.forEach(camera => {
+                    camera.status = 'error';
+                });
+                
+                updateComponentStatus();
+                
+                addLogEntry('PARADA DE EMERGENCIA ACTIVADA');
+                showNotification('PARADA DE EMERGENCIA', 'exclamation-triangle');
+            }
+            
+            updateInfoPanel();
+        }
+        
+        // Función para iniciar el temporizador de misión
+        function startMissionTimer() {
+            if (missionTimerInterval) {
+                clearInterval(missionTimerInterval);
+            }
+            
+            missionTimerInterval = setInterval(() => {
+                missionTime++;
+                missionTimeElement.textContent = `Tiempo de misión: ${formatTimeFromSeconds(missionTime)}`;
+            }, 1000);
+        }
+        
+        // Función para detener el temporizador de misión
+        function stopMissionTimer() {
+            if (missionTimerInterval) {
+                clearInterval(missionTimerInterval);
+                missionTimerInterval = null;
+            }
+        }
+        
+        // Función para calcular una ruta (simulada) según el tipo seleccionado
+        function calculateRoute() {
+            if (isEmergencyStop) {
+                showNotification('No se puede calcular ruta durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            const destination = destinationInput.value.trim();
+            
+            if (!destination) {
+                showNotification('Por favor, ingresa un destino.', 'exclamation-triangle');
+                return;
+            }
+            
+            // Simular cálculo de ruta
+            addLogEntry(`Calculando ruta ${selectedRouteType} hacia: ${destination}`);
+            
+            // Coordenadas de ejemplo para diferentes tipos de rutas en Lanco
+            const routeTypes = {
+                optimal: [
+                    [-39.456150, -72.768835],
+                    [-39.455568, -72.769672],
+                    [-39.455106, -72.770326],
+                    [-39.454748, -72.770863],
+                    [-39.454714, -72.770903],
+                    [-39.455017, -72.771370],
+                    [-39.455414, -72.772045],
+                    [-39.455423, -72.772121],
+                    [-39.455180, -72.772826],
+                    [-39.454922, -72.773566],
+                    [-39.454594, -72.774349],
+                    [-39.454360, -72.774929],
+                    [-39.454008, -72.775626],
+                    [-39.453861, -72.775937],
+                    [-39.453843, -72.776079],
+                    [-39.453909, -72.776442],
+                    [-39.453890, -72.776562],
+                    [-39.453843, -72.776659],
+                    [-39.453470, -72.777050],
+                    [-39.453223, -72.777327],
+                    [-39.453186, -72.777367],
+                    [-39.453130, -72.777286],
+                    [-39.452799, -72.776742],
+                    [-39.452532, -72.776369],
+                    [-39.452511, -72.776294],
+                    [-39.452451, -72.776197],
+                    [-39.452161, -72.775755],
+                    [-39.451840, -72.775269],
+                    [-39.451813, -72.775221],
+                    [-39.452155, -72.774859],
+                    [-39.452188, -72.774813],
+                    [-39.452422, -72.775208],
+                    [-39.452633, -72.775524],
+                    [-39.452310, -72.775484],
+                    [-39.452159, -72.775479]
+                ],
+                shortest: [
+                    [-39.456150, -72.768835],
+                    [-39.456419, -72.768441],
+                    [-39.456794, -72.767877],
+                    [-39.456746, -72.767810],
+                    [-39.456522, -72.767467],
+                    [-39.456191, -72.766957],
+                    [-39.456156, -72.766906],
+                    [-39.455827, -72.766375],
+                    [-39.455549, -72.765960],
+                    [-39.455106, -72.765265],
+                    [-39.455089, -72.765233],
+                    [-39.455046, -72.765171],
+                    [-39.454803, -72.764790],
+                    [-39.454750, -72.764715],
+                    [-39.454480, -72.764280],
+                    [-39.454435, -72.764213],
+                    [-39.454244, -72.763913],
+                    [-39.454199, -72.763838],
+                    [-39.454002, -72.763521],
+                    [-39.453952, -72.763583],
+                    [-39.453913, -72.763521],
+                    [-39.453890, -72.763543],
+                    [-39.453778, -72.763728],
+                    [-39.453648, -72.763996],
+                    [-39.453524, -72.764114],
+                    [-39.453466, -72.764433],
+                    [-39.453393, -72.764511],
+                    [-39.453267, -72.764777],
+                    [-39.453031, -72.765200],
+                    [-39.453008, -72.765380],
+                    [-39.452884, -72.765613],
+                    [-39.452741, -72.765855],
+                    [-39.452705, -72.766021],
+                    [-39.452664, -72.766110],
+                    [-39.452552, -72.766171],
+                    [-39.452101, -72.767067],
+                    [-39.452047, -72.767156],
+                    [-39.451790, -72.767690],
+                    [-39.451506, -72.768312],
+                    [-39.451324, -72.768644],
+                    [-39.451206, -72.768993],
+                    [-39.451024, -72.769310],
+                    [-39.450960, -72.769476],
+                    [-39.450947, -72.769613],
+                    [-39.450999, -72.769709],
+                    [-39.450726, -72.770299],
+                    [-39.450458, -72.770865],
+                    [-39.450407, -72.770983],
+                    [-39.450112, -72.771576],
+                    [-39.449870, -72.772053],
+                    [-39.449831, -72.772142],
+                    [-39.449775, -72.772244],
+                    [-39.449591, -72.771986],
+                    [-39.449299, -72.772622],
+                    [-39.449062, -72.773132],
+                    [-39.449021, -72.773218],
+                    [-39.448857, -72.773757],
+                    [-39.448752, -72.774237],
+                    [-39.448702, -72.774781],
+                    [-39.448986, -72.775151],
+                    [-39.449423, -72.775857],
+                    [-39.449487, -72.775951],
+                    [-39.450102, -72.776940],
+                    [-39.450152, -72.777008],
+                    [-39.450740, -72.777893],
+                    [-39.450769, -72.778013],
+                    [-39.450837, -72.778072],
+                    [-39.451479, -72.779084],
+                    [-39.451807, -72.778713],
+                    [-39.452217, -72.778260],
+                    [-39.452283, -72.778209],
+                    [-39.452631, -72.777823],
+                    [-39.453051, -72.777362],
+                    [-39.453130, -72.777286],
+                    [-39.452523, -72.776286],
+                    [-39.452455, -72.776230],
+                    [-39.452627, -72.776042],
+                    [-39.452797, -72.775819],
+                    [-39.452488, -72.775339],
+                    [-39.452179, -72.774827],
+                    [-39.451997, -72.775025],
+                    [-39.451813, -72.775218],
+                    [-39.451993, -72.775516],
+                    [-39.452175, -72.775495]
+                ],
+                ecologic: [
+                    [-39.456150, -72.768835],
+                    [-39.456771, -72.767936],
+                    [-39.457589, -72.766759],
+                    [-39.458080, -72.766067],
+                    [-39.458527, -72.765415],
+                    [-39.458935, -72.764822],
+                    [-39.459401, -72.764111],
+                    [-39.459705, -72.763680],
+                    [-39.460088, -72.763122],
+                    [-39.460416, -72.762596],
+                    [-39.460416, -72.762596],
+                    [-39.460962, -72.761815],
+                    [-39.461250, -72.761386],
+                    [-39.461608, -72.760882],
+                    [-39.462072, -72.760206],
+                    [-39.462354, -72.759790],
+                    [-39.462818, -72.759133],
+                    [-39.463232, -72.758514],
+                    [-39.463619, -72.757961],
+                    [-39.464081, -72.757301],
+                    [-39.464528, -72.756591],
+                    [-39.464847, -72.756116],
+                    [-39.465481, -72.755070],
+                    [-39.465847, -72.754434],
+                    [-39.466359, -72.753565],
+                    [-39.466721, -72.752897],
+                    [-39.467019, -72.752235],
+                ]
+            };
+            
+            routeCoordinates = routeTypes[selectedRouteType];
+            
+            // Calcular distancia total
+            totalDistance = 0;
+            for (let i = 0; i < routeCoordinates.length - 1; i++) {
+                const [lat1, lng1] = routeCoordinates[i];
+                const [lat2, lng2] = routeCoordinates[i + 1];
+                totalDistance += calculateDistance(lat1, lng1, lat2, lng2);
+            }
+            
+            // Dibujar la ruta en el mapa
+            if (currentRoute) {
+                map.removeLayer(currentRoute);
+            }
+            
+            const routeColor = selectedRouteType === 'optimal' ? '#007aff' : 
+                              selectedRouteType === 'shortest' ? '#34c759' : '#ff9500';
+            
+            currentRoute = L.polyline(routeCoordinates, {color: routeColor, weight: 5}).addTo(map);
+            map.fitBounds(currentRoute.getBounds());
+            
+            // Calcular valores simulados según el tipo de ruta
+            const timeMultipliers = {optimal: 1.5, shortest: 1.2, ecologic: 1.8};
+            const travelTime = Math.round(routeCoordinates.length * timeMultipliers[selectedRouteType]);
+            timeElement.textContent = `${travelTime} min`;
+            
+            // Calcular batería estimada a consumir (aproximadamente 2% per km)
+            batteryConsumed = Math.min(100, Math.round(totalDistance * 2));
+            
+            // Calcular hora estimada de finalización
+            const now = new Date();
+            startTime = now;
+            estimatedEndTime = new Date(now.getTime() + travelTime * 60000);
+            
+            startTimeElement.textContent = formatTime(now);
+            endTimeElement.textContent = formatTime(estimatedEndTime);
+            distanceElement.textContent = `${totalDistance.toFixed(2)} km`;
+            batteryConsumedElement.textContent = `${batteryConsumed}%`;
+            
+            // Mostrar el botón de iniciar ruta
+            startRouteBtn.style.display = 'block';
+            updatePlayStopButtons();
+            
+            addLogEntry(`Ruta ${selectedRouteType} calculada. Tiempo estimado: ${travelTime} minutos.`);
+            showNotification(`Ruta ${selectedRouteType} calculada correctamente`, 'check-circle');
+        }
+        
+        // Función para simular el movimiento del robot
+        function startRouteSimulation() {
+            if (isEmergencyStop) {
+                showNotification('No se puede iniciar durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (routeCoordinates.length === 0) {
+                showNotification('Primero calcula una ruta.', 'exclamation-triangle');
+                return;
+            }
+            
+            isPlaying = true;
+            updatePlayStopButtons();
+            
+            addLogEntry('Iniciando recorrido del robot.');
+            calculateRouteBtn.disabled = true;
+            startRouteBtn.disabled = true;
+            programmedRouteBtn.disabled = true;
+            
+            // Iniciar temporizador de misión
+            startMissionTimer();
+            
+            // Reiniciar estadísticas
+            let traveledDistance = 0;
+            let usedBattery = 0;
+            currentRouteIndex = 0;
+            initialBattery = batteryLevel;
+            
+            // Actualizar estadísticas iniciales
+            kmTraveledElement.textContent = '0.0';
+            batteryUsedElement.textContent = '0%';
+            updateSpeed(5); // Velocidad inicial
+            updateInfoPanel();
+            
+            // Simular movimiento a lo largo de la ruta
+            simulationInterval = setInterval(() => {
+                if (currentRouteIndex >= routeCoordinates.length) {
+                    // Llegó al destino
+                    clearInterval(simulationInterval);
+                    simulationInterval = null;
+                    isPlaying = false;
+                    updatePlayStopButtons();
+                    addLogEntry('El robot ha llegado al destino.');
+                    updateSpeed(0);
+                    stopMissionTimer();
+                    
+                    // Simular recolección de botellas
+                    const collectedBottles = Math.floor(Math.random() * 10) + 5;
+                    const collectedWeight = (collectedBottles * 0.05).toFixed(2); // 50g por botella
+                    
+                    petBottles += collectedBottles;
+                    petWeight += parseFloat(collectedWeight);
+                    
+                    bottlesElement.textContent = petBottles;
+                    weightElement.textContent = `${petWeight.toFixed(2)} kg`;
+                    updateInfoPanel();
+                    
+                    addLogEntry(`Recolectadas ${collectedBottles} botellas PET (${collectedWeight} kg).`);
+                    showNotification(`Recolectadas ${collectedBottles} botellas PET`, 'wine-bottle');
+                    
+                    calculateRouteBtn.disabled = false;
+                    startRouteBtn.disabled = false;
+                    programmedRouteBtn.disabled = false;
+                    return;
+                }
+                
+                // Simular posibles fallos en componentes
+                simulateRandomFailures();
+                
+                // Calcular ángulo de dirección si no es el último punto
+                if (currentRouteIndex < routeCoordinates.length - 1) {
+                    const currentCoord = routeCoordinates[currentRouteIndex];
+                    const nextCoord = routeCoordinates[currentRouteIndex + 1];
+                    currentAngle = calculateAngle(currentCoord, nextCoord);
+                    
+                    // Actualizar el ícono con la nueva dirección
+                    currentMarker.setIcon(createRobotIcon(currentAngle));
+                    
+                    // Calcular distancia recorrida en este segmento
+                    const segmentDistance = calculateDistance(
+                        currentCoord[0], currentCoord[1],
+                        nextCoord[0], nextCoord[1]
+                    );
+                    traveledDistance += segmentDistance;
+                    
+                    // Calcular batería usada (aproximadamente 2% por km)
+                    usedBattery = Math.min(100, Math.round(traveledDistance * 2));
+                    batteryLevel = initialBattery - usedBattery;
+                    
+                    // Actualizar estadísticas
+                    kmTraveledElement.textContent = traveledDistance.toFixed(2);
+                    batteryUsedElement.textContent = `${usedBattery}%`;
+                    batteryElement.textContent = `${batteryLevel}%`;
+                    
+                    // Simular cambio de velocidad (entre 3 y 8 km/h)
+                    const newSpeed = 3 + Math.floor(Math.random() * 6);
+                    updateSpeed(newSpeed);
+                    
+                    // Actualizar panel de información
+                    updateInfoPanel();
+                }
+                
+                // Mover el marcador a la siguiente coordenada
+                const nextCoord = routeCoordinates[currentRouteIndex];
+                currentMarker.setLatLng(nextCoord);
+                
+                // Actualizar el popup con información de progreso
+                const progress = Math.round((currentRouteIndex / (routeCoordinates.length - 1)) * 100);
+                currentMarker.bindPopup(`
+                    <strong>EcoBot-247 en camino</strong><br>
+                    ${progress}% completado<br>
+                    Ruta: ${selectedRouteType}<br>
+                    Velocidad: ${currentSpeed} km/h<br>
+                    Dirección: ${Math.round(currentAngle)}°<br>
+                    Distancia: ${traveledDistance.toFixed(2)} km<br>
+                    Batería: ${batteryLevel}%
+                `).openPopup();
+                
+                currentRouteIndex++;
+                
+            }, 1500); // Actualizar cada 1.5 segundos
+        }
+        
+        // Función para detener la simulación
+        function stopSimulation() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+            }
+            isPlaying = false;
+            updatePlayStopButtons();
+            updateSpeed(0);
+            addLogEntry('Recorrido detenido');
+            showNotification('Recorrido detenido', 'stop');
+            stopMissionTimer();
+            
+            calculateRouteBtn.disabled = false;
+            startRouteBtn.disabled = false;
+            programmedRouteBtn.disabled = false;
+        }
+        
+        // Función para cargar una ruta programada
+        function loadProgrammedRoute() {
+            if (isEmergencyStop) {
+                showNotification('No se puede cargar ruta durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            // Simular carga de ruta programada
+            addLogEntry('Cargando ruta programada...');
+            
+            // Establecer valores de ejemplo para ruta programada
+            currentLocationInput.value = 'Municipalidad de Lanco';
+            destinationInput.value = 'Centro de Acopio Reciclaje';
+            selectedRouteType = 'optimal';
+            
+            // Actualizar selección visual de ruta
+            routeOptions.forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.route === selectedRouteType) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Calcular la ruta automáticamente
+            calculateRoute();
+            
+            showNotification('Ruta programada cargada correctamente', 'calendar-check');
+        }
+        
+        // Función para control manual del robot
+        function manualControl(direction) {
+            if (isEmergencyStop) {
+                showNotification('No se puede controlar manualmente durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                isPlaying = false;
+                updatePlayStopButtons();
+                calculateRouteBtn.disabled = false;
+                startRouteBtn.disabled = false;
+                programmedRouteBtn.disabled = false;
+            }
+            
+            isManualControl = true;
+            
+            // Obtener la posición actual
+            const currentPos = currentMarker.getLatLng();
+            
+            // Calcular nueva posición según la dirección
+            let newLat = currentPos.lat;
+            let newLng = currentPos.lng;
+            let newAngle = currentAngle;
+            
+            switch(direction) {
+                case 'forward':
+                    newLat += 0.0001;
+                    newAngle = 0;
+                    updateSpeed(3);
+                    break;
+                case 'backward':
+                    newLat -= 0.0001;
+                    newAngle = 180;
+                    updateSpeed(2);
+                    break;
+                case 'left':
+                    newLng -= 0.0001;
+                    newAngle = 270;
+                    updateSpeed(2);
+                    break;
+                case 'right':
+                    newLng += 0.0001;
+                    newAngle = 90;
+                    updateSpeed(2);
+                    break;
+                case 'stop':
+                    updateSpeed(0);
+                    addLogEntry('Robot detenido por control manual');
+                    updateInfoPanel();
+                    return;
+            }
+            
+            // Actualizar distancia recorrida
+            const currentDistance = parseFloat(kmTraveledElement.textContent);
+            kmTraveledElement.textContent = (currentDistance + 0.01).toFixed(2);
+            
+            // Actualizar batería (consumo aproximado)
+            batteryLevel = Math.max(0, batteryLevel - 0.1);
+            batteryElement.textContent = `${batteryLevel.toFixed(1)}%`;
+            
+            // Actualizar posición y ángulo
+            currentMarker.setLatLng([newLat, newLng]);
+            currentMarker.setIcon(createRobotIcon(newAngle));
+            currentAngle = newAngle;
+            
+            // Actualizar el popup
+            currentMarker.bindPopup(`
+                <strong>EcoBot-247 en control manual</strong><br>
+                Dirección: ${direction}<br>
+                Velocidad: ${currentSpeed} km/h<br>
+                Posición: ${newLat.toFixed(6)}, ${newLng.toFixed(6)}<br>
+                Batería: ${batteryLevel.toFixed(1)}%
+            `).openPopup();
+            
+            addLogEntry(`Control manual: Movimiento hacia ${direction}`);
+            updateInfoPanel();
+        }
+
+        // Marcador inicial (posición por defecto en Lanco)
+        currentMarker = L.marker([-39.456150, -72.768835], {
+            icon: createRobotIcon(0)
+        }).addTo(map)
+        .bindPopup('<strong>EcoBot-247</strong><br>Robot Recolector PET<br>Ubicación inicial<br>Batería: 85%')
+        .openPopup();
+        
+        // Event Listeners
+        calculateRouteBtn.addEventListener('click', calculateRoute);
+        startRouteBtn.addEventListener('click', startRouteSimulation);
+        programmedRouteBtn.addEventListener('click', loadProgrammedRoute);
+        emergencyStopBtn.addEventListener('click', emergencyStop);
+        btnArm.addEventListener('click', toggleArm);
+        mapPlayBtn.addEventListener('click', startRouteSimulation);
+        mapStopBtn.addEventListener('click', stopSimulation);
+        
+        // Controles manuales
+        btnForward.addEventListener('click', () => manualControl('forward'));
+        btnBackward.addEventListener('click', () => manualControl('backward'));
+        btnLeft.addEventListener('click', () => manualControl('left'));
+        btnRight.addEventListener('click', () => manualControl('right'));
+        btnStop.addEventListener('click', () => manualControl('stop'));
+        
+        // Selección de tipo de ruta
+        routeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                if (isEmergencyStop) {
+                    showNotification('No se puede cambiar ruta durante parada de emergencia', 'exclamation-triangle');
+                    return;
+                }
+                
+                routeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                selectedRouteType = option.dataset.route;
+                addLogEntry(`Tipo de ruta cambiado a: ${option.dataset.route}`);
+            });
+        });
+        
+        // Inicializar la aplicación
+        addLogEntry('Sistema de gestión de robot inicializado correctamente.');
+        showNotification('Sistema listo para operar', 'robot');
+        updatePlayStopButtons();
+        updateComponentStatus();
+    </script>
+</body>
+</html>
