@@ -1,0 +1,2901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Recolector PET - Sistema de Gestión</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #111;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --accent: #007aff;
+            --accent-green: #34c759;
+            --accent-orange: #ff9500;
+            --accent-red: #ff3b30;
+            --accent-purple: #af52de;
+            --border-radius: 12px;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent), var(--accent-green));
+            z-index: 1;
+        }
+        
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+        
+        .brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(175, 82, 222, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .header-right {
+            text-align: right;
+            z-index: 2;
+        }
+        
+        .robot-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
+        }
+        
+        .robot-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .status-indicator.off {
+            background-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        .location-bar {
+            background: rgba(30, 30, 32, 0.8);
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            font-size: 0.9rem;
+        }
+        
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .location-info i {
+            color: var(--accent);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .card h2 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i {
+            color: var(--accent);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            background-color: rgba(60, 60, 67, 0.2);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            border-radius: 10px;
+            font-size: 16px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: rgba(60, 60, 67, 0.3);
+        }
+        
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+        .leaflet-container .leaflet-control-attribution {
+            display: none !important;
+        }
+
+        .route-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .route-option {
+            background: rgba(60, 60, 67, 0.2);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .route-option:hover {
+            background: rgba(60, 60, 67, 0.3);
+        }
+        
+        .route-option.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .route-option i {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .time-box {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .time-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .time-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background: #0a84ff;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: rgba(60, 60, 67, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #start-route {
+            background: var(--accent-green);
+        }
+        
+        #start-route:hover {
+            background: #30d158;
+        }
+        
+        #pause-route {
+            background: var(--accent-orange);
+            margin-top: 10px;
+            display: none;
+        }
+        
+        #pause-route:hover {
+            background: #ff9f0a;
+        }
+        
+        #resume-route {
+            background: var(--accent-orange);
+            margin-top: 10px;
+            display: none;
+        }
+        
+        #resume-route:hover {
+            background: #ff9f0a;
+        }
+        
+        #programmed-route {
+            background: var(--accent-orange);
+            margin-top: 10px;
+        }
+        
+        #programmed-route:hover {
+            background: #ff9f0a;
+        }
+        
+        #emergency-stop {
+            background: var(--accent-red);
+            margin-top: 10px;
+        }
+        
+        #emergency-stop:hover {
+            background: #ff453a;
+        }
+        
+        .power-btn {
+            background: var(--accent-green);
+            margin-top: 10px;
+        }
+        
+        .power-btn.off {
+            background: var(--accent-red);
+        }
+        
+        .power-btn.off:hover {
+            background: #ff453a;
+        }
+        
+        .power-btn:hover {
+            background: #30d158;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(60, 60, 67, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(60, 60, 67, 0.3);
+            border-color: var(--accent);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        #map {
+            height: 800px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            z-index: 1;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(60, 60, 67, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .log-entry {
+            padding: 12px;
+            border-bottom: 1px solid rgba(60, 60, 67, 0.4);
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: var(--accent);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .log-message {
+            color: var(--text-secondary);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-top: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        /* Estilo para la barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0a84ff;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .header-left, .header-right {
+                text-align: center;
+            }
+            
+            .robot-status {
+                justify-content: center;
+            }
+            
+            .route-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .location-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .manual-controls {
+                flex-direction: column;
+            }
+            
+            .navigation-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .component-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        /* Estilo para el ícono personalizado del robot */
+        .robot-icon {
+            transition: transform 0.5s ease;
+        }
+        
+        /* Efecto de brillo para elementos importantes */
+        .glow-effect {
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent);
+            }
+            to {
+                box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+            }
+        }
+        
+        /* Controles manuales */
+        .manual-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .arm-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 10px;
+            gap: 10px;
+        }
+        
+        .arm-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        .arm-status.inactive .arm-indicator {
+            background-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        .map-info-container {
+            display: flex;
+            gap: 15px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        .map-info-box {
+            background: rgba(17, 17, 17, 0.4);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        .map-info-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 3px;
+        }
+        
+        .map-info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .map-info-icon {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: var(--accent);
+        }
+        
+        .emergency-active {
+            animation: emergencyFlash 1s infinite;
+        }
+        
+        @keyframes emergencyFlash {
+            0%, 100% { background-color: var(--bg-card); }
+            50% { background-color: rgba(255, 59, 48, 0.3); }
+        }
+        
+        /* Información de navegación */
+        .navigation-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(17, 17, 17, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 300px;
+        }
+        
+        .nav-section {
+            margin-bottom: 15px;
+        }
+        
+        .nav-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .nav-distance {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .nav-street {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+        
+        .nav-detail {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .nav-divider {
+            height: 1px;
+            background: rgba(60, 60, 67, 0.4);
+            margin: 10px 0;
+        }
+        
+        .nav-time {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+        
+        .nav-speed {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-orange);
+        }
+        
+        .nav-destination {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        /* Controles en el mapa */
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 60px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .map-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .map-btn:hover {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .map-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .map-btn.play {
+            background: var(--accent-green);
+        }
+        
+        .map-btn.pause {
+            background: var(--accent-orange);
+        }
+        
+        .map-btn.stop {
+            background: var(--accept-red);
+        }
+        
+        .map-btn.expand {
+            background: var(--accent-purple);
+        }
+        
+        .map-btn.center {
+            background: var(--accent);
+        }
+        
+        /* Indicador de giro */
+        .turn-indicator {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(17, 17, 17, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: none;
+        }
+        
+        .turn-icon {
+            font-size: 24px;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .turn-street {
+            font-size: 14px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+        
+        /* Ubicación en el mapa */
+        .location-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(17, 17, 17, 0.4);
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .location-overlay i {
+            color: var(--accent);
+        }
+        
+        /* Progreso del robot */
+        .progress-overlay {
+            position: absolute;
+            bottom: 60px;
+            left: 10px;
+            background: rgba(17, 17, 17, 0.4);
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 200px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(60, 60, 67, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-marker {
+            position: absolute;
+            top: -3px;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        
+        /* Para móviles */
+        @media (max-width: 480px) {
+            .navigation-info {
+                width: calc(100% - 40px);
+                bottom: 80px;
+            }
+            
+            .nav-distance {
+                font-size: 20px;
+            }
+            
+            .nav-street {
+                font-size: 16px;
+            }
+            
+            .map-controls {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .map-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            
+            .map-info-container {
+                flex-direction: column;
+                top: 10px;
+                right: 10px;
+            }
+            
+            .map-info-box {
+                padding: 8px 12px;
+                min-width: 70px;
+            }
+            
+            .map-info-value {
+                font-size: 18px;
+            }
+        }
+        
+        /* Estado de componentes */
+        .component-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .component-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(60, 60, 67, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .component-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .component-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .component-value.ok {
+            color: var(--accent-green);
+        }
+        
+        .component-value.warning {
+            color: var(--accent-orange);
+        }
+        
+        .component-value.error {
+            color: var(--accent-red);
+        }
+        
+        .component-value.off {
+            color: var(--text-secondary);
+        }
+        
+        /* Mapa en pantalla completa */
+        .map-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100vh;
+            width: 100vw;
+            z-index: 9999;
+            border-radius: 0;
+        }
+        
+        .map-fullscreen .map-controls {
+            bottom: 30px;
+            right: 30px;
+        }
+        
+        .map-fullscreen .navigation-info {
+            bottom: 30px;
+            left: 30px;
+        }
+        
+        .map-fullscreen .location-overlay {
+            top: 20px;
+            left: 20px;
+        }
+        
+        .map-fullscreen .progress-overlay {
+            top: 70px;
+            left: 20px;
+        }
+        
+        /* Límite de velocidad */
+        .speed-limit {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17, 17, 17, 0.8);
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+        
+        .speed-limit i {
+            color: var(--accent-orange);
+        }
+        
+        .speed-limit-value {
+            font-weight: bold;
+            color: var(--accent-orange);
+        }
+        
+        /* Estado de comunicación */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(60, 60, 67, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        
+        .connection-dot.warning {
+            background-color: var(--accent-orange);
+            box-shadow: 0 0 8px var(--accent-orange);
+        }
+        
+        .connection-dot.error {
+            background-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Temperatura y ventilación */
+        .temp-vent-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .temp-box, .vent-box {
+            flex: 1;
+            background: rgba(60, 60, 67, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .temp-value, .vent-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .temp-label, .vent-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* Botones de encendido */
+        .power-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .power-btn-small {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .power-btn-small.on {
+            background: var(--accent-green);
+            color: white;
+        }
+        
+        .power-btn-small.off {
+            background: var(--accent-red);
+            color: white;
+        }
+        
+        .power-btn-small:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        /* Secciones de control separadas */
+        .control-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .control-section h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-section h3 i {
+            color: var(--accent);
+        }
+        
+        /* Botellas en tiempo real */
+        .bottle-collection {
+            background: rgba(60, 60, 67, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border: 1px solid rgba(60, 60, 67, 0.2);
+        }
+        
+        .bottle-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(60, 60, 67, 0.4);
+        }
+        
+        .bottle-item:last-child {
+            border-bottom: none;
+        }
+        
+        .bottle-icon {
+            font-size: 20px;
+            color: var(--accent-green);
+            margin-right: 10px;
+        }
+        
+        .bottle-info {
+            flex: 1;
+        }
+        
+        .bottle-location {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .bottle-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .bottle-weight {
+            font-weight: bold;
+            color: var(--accent);
+        }
+        
+        /* Indicador de recolección en tiempo real */
+        .collection-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(17, 17, 17, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(60, 60, 67, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .collection-indicator.show {
+            display: flex;
+        }
+        
+        .collection-icon {
+            font-size: 24px;
+            color: var(--accent-green);
+        }
+        
+        .collection-text {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <div class="brand">SEDNA</div>
+                <div class="subtitle">Centro de Control</div>
+            </div>
+            <div class="header-right">
+                <div class="robot-name">EcoBot-247</div>
+                <div class="robot-status">
+                    <span class="status-indicator" id="robot-power-indicator"></span>
+                    <span id="robot-status-text">Robot Encendido</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="location-bar">
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Lanco, Región de Los Ríos, Chile</span>
+            </div>
+            <div class="location-info">
+                <i class="fas fa-satellite"></i>
+                <span>Sistema de Navegación Activo</span>
+            </div>
+        </div>
+         <div id="map-container" style="position: relative;">
+            <div id="map"></div>
+            
+            <!-- Información de estado en el mapa -->
+            <div class="map-info-container">
+                <div class="map-info-box">
+                    <div class="map-info-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="map-info-value" id="map-speed">0</div>
+                    <div class="map-info-label">km/h</div>
+                </div>
+                <div class="map-info-box">
+                    <div class="map-info-icon"><i class="fas fa-cogs"></i></div>
+                    <div class="map-info-value" id="map-rpm">0</div>
+                    <div class="map-info-label">RPM</div>
+                </div>
+                <div class="map-info-box">
+                    <div class="map-info-icon"><i class="fas fa-battery-three-quarters"></i></div>
+                    <div class="map-info-value" id="map-battery">85%</div>
+                    <div class="map-info-label">Batería</div>
+                </div>
+                <div class="map-info-box">
+                    <div class="map-info-icon"><i class="fas fa-wine-bottle"></i></div>
+                    <div class="map-info-value" id="map-bottles">0</div>
+                    <div class="map-info-label">Botellas</div>
+                </div>
+                <div class="map-info-box">
+                    <div class="map-info-icon"><i class="fas fa-weight-hanging"></i></div>
+                    <div class="map-info-value" id="map-weight">0</div>
+                    <div class="map-info-label">kg</div>
+                </div>
+            </div>
+            
+            <!-- Límite de velocidad -->
+            <div class="speed-limit" id="speed-limit" style="display: none;">
+                <i class="fas fa-traffic-light"></i>
+                <span>Límite: </span>
+                <span class="speed-limit-value" id="speed-limit-value">30</span>
+                <span>km/h</span>
+            </div>
+
+            <!-- Información de ubicación -->
+            <div class="location-overlay">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Lanco, Chile</span>
+            </div>
+            
+            <!-- Información de progreso -->
+            <div class="progress-overlay">
+                <div>Progreso: <span id="progress-percent">0%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    <div class="progress-marker" id="progress-marker" style="left: 0%"></div>
+                </div>
+                <div>Distancia: <span id="progress-distance">0.0</span> km / <span id="total-distance">0.0</span> km</div>
+            </div>
+            
+            <!-- Información de navegación -->
+            <div class="navigation-info">
+                <div class="nav-section">
+                    <div class="nav-distance" id="nav-distance">0.0 km</div>
+                    <div class="nav-street" id="nav-street">--</div>
+                    <div class="nav-detail" id="nav-detail">Hacia destino</div>
+                </div>
+                
+                <div class="nav-divider"></div>
+                
+                <div class="nav-section">
+                    <div class="nav-time" id="nav-time">--:--</div>
+                    <div class="nav-detail">Tiempo restante</div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-speed" id="nav-speed">0 km/h</div>
+                    <div class="nav-detail">Velocidad actual</div>
+                </div>
+            </div>
+            
+            <!-- Controles en el mapa -->
+            <div class="map-controls">
+                <button class="map-btn play" id="map-play" title="Iniciar recorrido">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="map-btn pause" id="map-pause" title="Pausar recorrido" style="display: none;">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="map-btn stop" id="map-stop" title="Detener">
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="map-btn center" id="map-center" title="Centrar en robot">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <button class="map-btn expand" id="map-expand" title="Pantalla completa">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+            
+            <!-- Indicador de giro -->
+            <div class="turn-indicator" id="turn-indicator">
+                <div class="turn-icon" id="turn-icon"><i class="fas fa-arrow-right"></i></div>
+                <div class="turn-street" id="turn-street">En 0.0 km gira a la derecha</div>
+            </div>
+        </div>
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-route"></i> Control de Ruta</h2>
+                <div class="input-group">
+                    <label for="current-location"><i class="fas fa-map-marker-alt"></i> Ubicación Actual</label>
+                    <input type="text" id="current-location" placeholder="Ej: Avenida Principal 123" value="Ohigins 9000, Lanco, Los Rios">
+                </div>
+                <div class="input-group">
+                    <label for="destination"><i class="fas fa-flag-checkered"></i> Destino</label>
+                    <input type="text" id="destination" placeholder="Ej: Centro de Reciclaje" value="Plaza de Armas, Lanco, Los Rios">
+                </div>
+                
+                <div class="input-group">
+                    <label><i class="fas fa-route"></i> Tipo de Ruta</label>
+                    <div class="route-options">
+                        <div class="route-option active" data-route="optimal">
+                            <i class="fas fa-bolt"></i>
+                            <span>Óptima</span>
+                        </div>
+                        <div class="route-option" data-route="shortest">
+                            <i class="fas fa-route"></i>
+                            <span>Más Corta</span>
+                        </div>
+                        <div class="route-option" data-route="ecologic">
+                            <i class="fas fa-leaf"></i>
+                            <span>Ecológica</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-info">
+                    <div class="time-box">
+                        <div class="time-label">Hora de Salida</div>
+                        <div class="time-value" id="start-time">--:--:--</div>
+                    </div>
+                    <div class="time-box">
+                        <div class="time-label">Hora Estimada</div>
+                        <div class="time-value" id="end-time">--:--:--</div>
+                    </div>
+                </div>
+                
+                <div class="time-info">
+                    <div class="time-box">
+                        <div class="time-label">Distancia</div>
+                        <div class="time-value" id="distance">0 km</div>
+                    </div>
+                    <div class="time-box">
+                        <div class="time-label">Batería Consumida</div>
+                        <div class="time-value" id="battery-consumed">0%</div>
+                    </div>
+                </div>
+                
+                <button id="calculate-route">
+                    <i class="fas fa-calculator"></i> Calcular Ruta
+                </button>
+                <button id="start-route" style="display: none; margin-top: 10px;">
+                    <i class="fas fa-play"></i> Iniciar Recorrido
+                </button>
+                <button id="pause-route">
+                    <i class="fas fa-pause"></i> Pausar Recorrido
+                </button>
+                <button id="resume-route">
+                    <i class="fas fa-play"></i> Reanudar Recorrido
+                </button>
+                <button id="programmed-route">
+                    <i class="fas fa-calendar-alt"></i> Ruta Programada
+                </button>
+                <button id="emergency-stop" style="background: var(--accent-red);">
+                    <i class="fas fa-exclamation-triangle"></i> Parada de Emergencia
+                </button>
+                
+                <div class="control-section">
+                    <h3><i class="fas fa-power-off"></i> Control de Energía</h3>
+                    <div class="power-buttons">
+                        <button class="power-btn-small on" id="robot-power-btn">
+                            <i class="fas fa-robot"></i> Robot
+                        </button>
+                        <button class="power-btn-small on" id="arm-power-btn">
+                            <i class="fas fa-hand-paper"></i> Brazo
+                        </button>
+                        <button class="power-btn-small on" id="camera-power-btn">
+                            <i class="fas fa-video"></i> Cámara
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-microchip"></i> Estado del Robot</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="battery-level">85%</div>
+                        <div class="stat-label"><i class="fas fa-battery-three-quarters"></i> Batería</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="pet-bottles">0</div>
+                        <div class="stat-label"><i class="fas fa-wine-bottle"></i> Botellas Recogidas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="pet-weight">0 kg</div>
+                        <div class="stat-label"><i class="fas fa-weight-hanging"></i> Peso Acumulado</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="capacity">0/50</div>
+                        <div class="stat-label"><i class="fas fa-box-open"></i> Capacidad</div>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="km-traveled">0.0</div>
+                        <div class="stat-label"><i class="fas fa-road"></i> Km Recorridos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="battery-used">0%</div>
+                        <div class="stat-label"><i class="fas fa-bolt"></i> Batería Usada</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="current-speed">0 km/h</div>
+                        <div class="stat-label"><i class="fas fa-tachometer-alt"></i> Velocidad</div>
+                    </div>
+                </div>
+                
+                <div class="connection-status">
+                    <div class="connection-dot" id="connection-status"></div>
+                    <span id="connection-text">LORA WAN: Conectado</span>
+                </div>
+                
+                <div class="temp-vent-container">
+                    <div class="temp-box">
+                        <div class="temp-value" id="temperature-value">42°C</div>
+                        <div class="temp-label">Temperatura</div>
+                    </div>
+                    <div class="vent-box">
+                        <div class="vent-value" id="ventilation-value">75%</div>
+                        <div class="vent-label">Ventilación</div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3><i class="fas fa-cogs"></i> Motores de Ruedas</h3>
+                    <div class="power-buttons">
+                        <button class="power-btn-small on" id="wheel-power-btn">
+                            <i class="fas fa-power-off"></i> Encender Ruedas
+                        </button>
+                    </div>
+                    <div class="component-grid">
+                        <div class="component-item">
+                            <div class="component-name">Motor DD</div>
+                            <div class="component-value ok" id="motor-dd">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Motor DT</div>
+                            <div class="component-value ok" id="motor-dt">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Motor MD</div>
+                            <div class="component-value ok" id="motor-md">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Motor MT</div>
+                            <div class="component-value ok" id="motor-mt">OK</div>
+                        </div>
+
+                        <div class="component-item">
+                            <div class="component-name">Motor TD</div>
+                            <div class="component-value ok" id="motor-td">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Motor TT</div>
+                            <div class="component-value ok" id="motor-tt">OK</div>
+                        </div>
+
+
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3><i class="fas fa-robot"></i> Motores del Brazo</h3>
+                    <div class="power-buttons">
+                        <button class="power-btn-small on" id="arm-motor-power-btn">
+                            <i class="fas fa-power-off"></i> Encender Brazo
+                        </button>
+                    </div>
+                    <div class="component-grid">
+                        <div class="component-item">
+                            <div class="component-name">Brazo M1</div>
+                            <div class="component-value ok" id="arm-m1">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M2</div>
+                            <div class="component-value ok" id="arm-m2">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M3</div>
+                            <div class="component-value ok" id="arm-m3">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M4</div>
+                            <div class="component-value ok" id="arm-m4">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M5</div>
+                            <div class="component-value ok" id="arm-m5">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M6</div>
+                            <div class="component-value ok" id="arm-m6">OK</div>
+                        </div>
+                        <div class="component-item">
+                            <div class="component-name">Brazo M7</div>
+                            <div class="component-value ok" id="arm-m7">OK</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3><i class="fas fa-gamepad"></i> Control Manual</h3>
+                    <div class="manual-controls">
+                        <button class="control-btn" id="btn-left"><i class="fas fa-arrow-left"></i></button>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button class="control-btn" id="btn-forward"><i class="fas fa-arrow-up"></i></button>
+                            <button class="control-btn" id="btn-backward"><i class="fas fa-arrow-down"></i></button>
+                        </div>
+                        <button class="control-btn" id="btn-right"><i class="fas fa-arrow-right"></i></button>
+                        <button class="control-btn" id="btn-stop"><i class="fas fa-stop"></i></button>
+                        <button class="control-btn" id="btn-arm"><i class="fas fa-hand-paper"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-bottom: 20px;">
+            <h2><i class="fas fa-wine-bottle"></i> Recolección en Tiempo Real</h2>
+            <div class="bottle-collection" id="bottle-collection">
+                <div class="bottle-item">
+                    <i class="fas fa-wine-bottle bottle-icon"></i>
+                    <div class="bottle-info">
+                        <div class="bottle-location">Iniciando sistema...</div>
+                        <div class="bottle-time">Esperando recolección</div>
+                    </div>
+                    <div class="bottle-weight">0.00 kg</div>
+                </div>
+            </div>
+        </div>
+        
+       
+        
+        <div class="card">
+            <h2><i class="fas fa-clipboard-list"></i> Registro de Actividades</h2>
+            <div class="log-container" id="activity-log">
+                <div class="log-entry">
+                    <span class="log-time">[00:00:00]</span>
+                    <span class="log-message">Sistema iniciado. Robot listo para operar.</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Desarrollado por Paul Pineda - 2025 skeleton.cl</p>
+        </footer>
+    </div>
+
+    <!-- Indicador de recolección en tiempo real -->
+    <div class="collection-indicator" id="collection-indicator">
+        <i class="fas fa-wine-bottle collection-icon"></i>
+        <div class="collection-text">¡Botella recogida! +<span id="collection-weight">0.05</span> kg</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Inicialización del mapa
+        const map = L.map('map', {
+            zoomControl: false, // Desactivar el control de zoom por defecto
+            center: [-39.456150, -72.768835],
+            zoom: 16
+        });
+
+        // Añadir capa de OpenStreetMap con estilo más oscuro
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            maxZoom: 20
+        }).addTo(map);
+        
+        // Añadir capa de etiquetas por separado para mejor control
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            maxZoom: 20
+        }).addTo(map);
+        
+         // Añadir control de zoom en la parte inferior derecha
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Variables para el estado del robot
+        let batteryLevel = 85;
+        let petBottles = 0;
+        let petWeight = 0;
+        let maxCapacity = 50; // Capacidad máxima de botellas
+        let currentRoute = null;
+        let simulationInterval = null;
+        let currentMarker = null;
+        let routeCoordinates = [];
+        let currentRouteIndex = 0;
+        let selectedRouteType = 'optimal';
+        let currentAngle = 0;
+        let startTime = null;
+        let estimatedEndTime = null;
+        let totalDistance = 0;
+        let batteryConsumed = 0;
+        let initialBattery = 85;
+        let currentSpeed = 0;
+        let isEmergencyStop = false;
+        let isArmActive = true;
+        let isRobotOn = true;
+        let isCameraOn = true;
+        let isWheelsOn = true;
+        let isArmMotorsOn = true;
+        let isManualControl = false;
+        let isPaused = false;
+        let traveledDistance = 0;
+        let usedBattery = 0;
+        let isMapFullscreen = false;
+        let currentRPM = 0;
+        let connectionStatus = true; // Estado de conexión LORA WAN
+        let temperature = 42; // Temperatura en °C
+        let ventilation = 75; // Nivel de ventilación en %
+        let bottleCollectionLog = []; // Registro de botellas recogidas
+        
+        // Calles para la información de navegación
+        const streets = [
+            "Calle O'Higgins", "Santiago", "Copihue", "18 Septiembre", 
+            "Libertad", "Arturo Prat", 
+        ];
+        
+        // Límites de velocidad por sector (coordenadas aproximadas)
+        const speedLimits = [
+            {minLat: -39.458, maxLat: -39.454, minLng: -72.772, maxLng: -72.768, limit: 20}, // Zona centro
+            {minLat: -39.454, maxLat: -39.450, minLng: -72.772, maxLng: -72.768, limit: 30}, // Zona residencial
+            {minLat: -39.458, maxLat: -39.450, minLng: -72.776, maxLng: -72.772, limit: 40}  // Avenida principal
+        ];
+        
+        // Elementos DOM
+        const currentLocationInput = document.getElementById('current-location');
+        const destinationInput = document.getElementById('destination');
+        const calculateRouteBtn = document.getElementById('calculate-route');
+        const startRouteBtn = document.getElementById('start-route');
+        const pauseRouteBtn = document.getElementById('pause-route');
+        const resumeRouteBtn = document.getElementById('resume-route');
+        const programmedRouteBtn = document.getElementById('programmed-route');
+        const emergencyStopBtn = document.getElementById('emergency-stop');
+        const batteryElement = document.getElementById('battery-level');
+        const bottlesElement = document.getElementById('pet-bottles');
+        const weightElement = document.getElementById('pet-weight');
+        const capacityElement = document.getElementById('capacity');
+        const timeElement = document.getElementById('travel-time');
+        const activityLog = document.getElementById('activity-log');
+        const routeOptions = document.querySelectorAll('.route-option');
+        const startTimeElement = document.getElementById('start-time');
+        const endTimeElement = document.getElementById('end-time');
+        const distanceElement = document.getElementById('distance');
+        const batteryConsumedElement = document.getElementById('battery-consumed');
+        const kmTraveledElement = document.getElementById('km-traveled');
+        const batteryUsedElement = document.getElementById('battery-used');
+        const currentSpeedElement = document.getElementById('current-speed');
+        const mapSpeedElement = document.getElementById('map-speed');
+        const mapRpmElement = document.getElementById('map-rpm');
+        const mapBatteryElement = document.getElementById('map-battery');
+        const mapBottlesElement = document.getElementById('map-bottles');
+        const mapWeightElement = document.getElementById('map-weight');
+        const robotPowerBtn = document.getElementById('robot-power-btn');
+        const armPowerBtn = document.getElementById('arm-power-btn');
+        const cameraPowerBtn = document.getElementById('camera-power-btn');
+        const wheelPowerBtn = document.getElementById('wheel-power-btn');
+        const armMotorPowerBtn = document.getElementById('arm-motor-power-btn');
+        const robotPowerIndicator = document.getElementById('robot-power-indicator');
+        const robotStatusText = document.getElementById('robot-status-text');
+        const mapPlayBtn = document.getElementById('map-play');
+        const mapPauseBtn = document.getElementById('map-pause');
+        const mapStopBtn = document.getElementById('map-stop');
+        const mapCenterBtn = document.getElementById('map-center');
+        const mapExpandBtn = document.getElementById('map-expand');
+        const navDistanceElement = document.getElementById('nav-distance');
+        const navStreetElement = document.getElementById('nav-street');
+        const navDetailElement = document.getElementById('nav-detail');
+        const navTimeElement = document.getElementById('nav-time');
+        const navSpeedElement = document.getElementById('nav-speed');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const turnIcon = document.getElementById('turn-icon');
+        const turnStreet = document.getElementById('turn-street');
+        const progressPercentElement = document.getElementById('progress-percent');
+        const progressFillElement = document.getElementById('progress-fill');
+        const progressMarkerElement = document.getElementById('progress-marker');
+        const progressDistanceElement = document.getElementById('progress-distance');
+        const totalDistanceElement = document.getElementById('total-distance');
+        const speedLimitElement = document.getElementById('speed-limit');
+        const speedLimitValueElement = document.getElementById('speed-limit-value');
+        const connectionStatusElement = document.getElementById('connection-status');
+        const connectionTextElement = document.getElementById('connection-text');
+        const temperatureElement = document.getElementById('temperature-value');
+        const ventilationElement = document.getElementById('ventilation-value');
+        const bottleCollectionElement = document.getElementById('bottle-collection');
+        const collectionIndicator = document.getElementById('collection-indicator');
+        const collectionWeightElement = document.getElementById('collection-weight');
+        
+        // Botones de control manual
+        const btnForward = document.getElementById('btn-forward');
+        const btnBackward = document.getElementById('btn-backward');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnStop = document.getElementById('btn-stop');
+        const btnArm = document.getElementById('btn-arm');
+        
+        // Crear ícono personalizado para el robot con dirección
+        function createRobotIcon(angle) {
+            // Crear un elemento HTML personalizado para el icono
+            const iconElement = document.createElement('div');
+            iconElement.innerHTML = `
+                 <div style="position: relative; transform: rotate(${angle}deg); transition: transform 0.5s ease;">
+                    <img src="robot.png" width="42" height="42" 
+                     style="border-radius:50%; overflow: initial; padding:4px; border:2px solid #007aff; filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.8));">
+                </div>
+            `;
+            
+            return L.divIcon({
+                html: iconElement.innerHTML,
+                className: 'robot-icon',
+                iconSize: [42, 42],
+                iconAnchor: [20, 20]
+            });
+        }
+        
+        // Función para calcular distancia entre dos coordenadas (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio de la Tierra en km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+            return distance;
+        }
+        
+        // Función para calcular el ángulo entre dos puntos
+        function calculateAngle(from, to) {
+            const dy = to[0] - from[0];
+            const dx = to[1] - from[1];
+            return Math.atan2(dy, dx) * 180 / Math.PI;
+        }
+        
+        // Función para formatear la hora
+        function formatTime(date) {
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+        }
+        
+        // Función para formatear minutos
+        function formatMinutes(minutes) {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+        
+        // Función para agregar entradas al registro de actividades
+        function addLogEntry(message) {
+            const now = new Date();
+            const timeString = `[${formatTime(now)}]`;
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<span class="log-time">${timeString}</span><span class="log-message">${message}</span>`;
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
+        
+        // Función para mostrar notificación
+        function showNotification(message, icon = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Función para actualizar la velocidad del robot
+        function updateSpeed(speed) {
+            currentSpeed = speed;
+            currentSpeedElement.textContent = `${speed} km/h`;
+            mapSpeedElement.textContent = speed;
+            navSpeedElement.textContent = `${speed} km/h`;
+            
+            // Actualizar RPM basado en velocidad (aproximación)
+            currentRPM = Math.round(speed * 80);
+            mapRpmElement.textContent = currentRPM;
+        }
+        
+        // Función para verificar límite de velocidad según ubicación
+        function checkSpeedLimit(lat, lng) {
+            for (const limit of speedLimits) {
+                if (lat >= limit.minLat && lat <= limit.maxLat && 
+                    lng >= limit.minLng && lng <= limit.maxLng) {
+                    speedLimitElement.style.display = 'flex';
+                    speedLimitValueElement.textContent = limit.limit;
+                    
+                    // Si excede el límite, mostrar advertencia
+                    if (currentSpeed > limit.limit) {
+                        speedLimitElement.style.background = 'rgba(255, 59, 48, 0.8)';
+                        if (Math.random() < 0.1) { // Mostrar notificación ocasionalmente
+                            showNotification(`¡Excediendo límite de velocidad (${limit.limit} km/h)!`, 'exclamation-triangle');
+                        }
+                    } else {
+                        speedLimitElement.style.background = 'rgba(17, 17, 17, 0.8)';
+                    }
+                    
+                    return;
+                }
+            }
+            
+            // Si no está en una zona con límite definido, ocultar
+            speedLimitElement.style.display = 'none';
+        }
+        
+        // Función para actualizar la información de navegación
+        function updateNavigationInfo() {
+            const remainingDistance = Math.max(0, totalDistance - traveledDistance);
+            const remainingTime = (remainingDistance / Math.max(1, currentSpeed)) * 60; // en minutos
+            
+            navDistanceElement.textContent = `${remainingDistance.toFixed(1)} km`;
+            navTimeElement.textContent = `${formatMinutes(remainingTime)}`;
+            
+            // Actualizar información de calles (simulado)
+            const randomStreet = streets[Math.floor(Math.random() * streets.length)];
+            navStreetElement.textContent = randomStreet;
+            navDetailElement.textContent = `Hacia ${destinationInput.value || 'destino'}`;
+            
+            // Actualizar información de progreso
+            const progress = totalDistance > 0 ? Math.min(100, (traveledDistance / totalDistance) * 100) : 0;
+            progressPercentElement.textContent = `${progress.toFixed(0)}%`;
+            progressFillElement.style.width = `${progress}%`;
+            progressMarkerElement.style.left = `${progress}%`;
+            progressDistanceElement.textContent = traveledDistance.toFixed(1);
+            totalDistanceElement.textContent = totalDistance.toFixed(1);
+        }
+        
+        // Función para mostrar indicador de giro
+        function showTurnIndicator(direction, distance, street) {
+            turnIcon.innerHTML = direction === 'left' ? '<i class="fas fa-arrow-left"></i>' : '<i class="fas fa-arrow-right"></i>';
+            turnStreet.textContent = `En ${distance} km gira a la ${direction === 'left' ? 'izquierda' : 'derecha'} en ${street}`;
+            turnIndicator.style.display = 'block';
+            
+            // Ocultar después de 5 segundos
+            setTimeout(() => {
+                turnIndicator.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Función para activar/desactivar el robot
+        function toggleRobotPower() {
+            isRobotOn = !isRobotOn;
+            if (isRobotOn) {
+                robotPowerBtn.className = 'power-btn-small on';
+                robotPowerIndicator.className = 'status-indicator';
+                robotStatusText.textContent = 'Robot Encendido';
+                addLogEntry('Robot encendido');
+                showNotification('Robot encendido', 'power-off');
+                
+                // Habilitar controles
+                calculateRouteBtn.disabled = false;
+                startRouteBtn.disabled = false;
+                programmedRouteBtn.disabled = false;
+            } else {
+                robotPowerBtn.className = 'power-btn-small off';
+                robotPowerIndicator.className = 'status-indicator off';
+                robotStatusText.textContent = 'Robot Apagado';
+                addLogEntry('Robot apagado');
+                showNotification('Robot apagado', 'power-off');
+                
+                // Detener cualquier operación en curso
+                if (simulationInterval) {
+                    clearInterval(simulationInterval);
+                    simulationInterval = null;
+                }
+                updateSpeed(0);
+                
+                // Deshabilitar controles
+                calculateRouteBtn.disabled = true;
+                startRouteBtn.disabled = true;
+                programmedRouteBtn.disabled = true;
+                pauseRouteBtn.style.display = 'none';
+                resumeRouteBtn.style.display = 'none';
+                mapPlayBtn.style.display = 'block';
+                mapPauseBtn.style.display = 'none';
+            }
+        }
+        
+        // Función para activar/desactivar el brazo robótico
+        function toggleArmPower() {
+            isArmActive = !isArmActive;
+            if (isArmActive) {
+                armPowerBtn.className = 'power-btn-small on';
+                addLogEntry('Brazo robótico activado');
+                showNotification('Brazo robótico activado', 'hand-paper');
+            } else {
+                armPowerBtn.className = 'power-btn-small off';
+                addLogEntry('Brazo robótico desactivado');
+                showNotification('Brazo robótico desactivado', 'hand-paper');
+            }
+        }
+        
+        // Función para activar/desactivar la cámara
+        function toggleCameraPower() {
+            isCameraOn = !isCameraOn;
+            if (isCameraOn) {
+                cameraPowerBtn.className = 'power-btn-small on';
+                addLogEntry('Cámara activada');
+                showNotification('Cámara activada', 'video');
+            } else {
+                cameraPowerBtn.className = 'power-btn-small off';
+                addLogEntry('Cámara desactivada');
+                showNotification('Cámara desactivada', 'video');
+            }
+        }
+        
+        // Función para activar/desactivar motores de ruedas
+        function toggleWheelsPower() {
+            isWheelsOn = !isWheelsOn;
+            if (isWheelsOn) {
+                wheelPowerBtn.className = 'power-btn-small on';
+                wheelPowerBtn.innerHTML = '<i class="fas fa-power-off"></i> Apagar Ruedas';
+                addLogEntry('Motores de ruedas activados');
+                showNotification('Motores de ruedas activados', 'cogs');
+            } else {
+                wheelPowerBtn.className = 'power-btn-small off';
+                wheelPowerBtn.innerHTML = '<i class="fas fa-power-off"></i> Encender Ruedas';
+                addLogEntry('Motores de ruedas desactivados');
+                showNotification('Motores de ruedas desactivados', 'cogs');
+                
+                // Detener movimiento si está en curso
+                if (simulationInterval) {
+                    clearInterval(simulationInterval);
+                    simulationInterval = null;
+                }
+                updateSpeed(0);
+            }
+        }
+        
+        // Función para activar/desactivar motores del brazo
+        function toggleArmMotorsPower() {
+            isArmMotorsOn = !isArmMotorsOn;
+            if (isArmMotorsOn) {
+                armMotorPowerBtn.className = 'power-btn-small on';
+                armMotorPowerBtn.innerHTML = '<i class="fas fa-power-off"></i> Apagar Brazo';
+                addLogEntry('Motores del brazo activados');
+                showNotification('Motores del brazo activados', 'robot');
+            } else {
+                armMotorPowerBtn.className = 'power-btn-small off';
+                armMotorPowerBtn.innerHTML = '<i class="fas fa-power-off"></i> Encender Brazo';
+                addLogEntry('Motores del brazo desactivados');
+                showNotification('Motores del brazo desactivados', 'robot');
+            }
+        }
+        
+        // Función para parada de emergencia
+        function emergencyStop() {
+            if (isEmergencyStop) {
+                // Reactivar el sistema
+                isEmergencyStop = false;
+                emergencyStopBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Parada de Emergencia';
+                emergencyStopBtn.style.background = 'var(--accent-red)';
+                document.body.classList.remove('emergency-active');
+                addLogEntry('Sistema reactivado después de parada de emergencia');
+                showNotification('Sistema reactivado', 'check-circle');
+                
+                // Reanudar la simulación si estaba en curso
+                if (isPaused) {
+                    resumeRoute();
+                }
+            } else {
+                // Activar parada de emergencia
+                isEmergencyStop = true;
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                emergencyStopBtn.innerHTML = '<i class="fas fa-play"></i> Reactivar Sistema';
+                emergencyStopBtn.style.background = 'var(--accent-green)';
+                document.body.classList.add('emergency-active');
+                updateSpeed(0);
+                addLogEntry('PARADA DE EMERGENCIA ACTIVADA');
+                showNotification('PARADA DE EMERGENCIA', 'exclamation-triangle');
+                
+                // Mostrar opciones después de la parada
+                calculateRouteBtn.disabled = false;
+                startRouteBtn.disabled = false;
+                programmedRouteBtn.disabled = false;
+                pauseRouteBtn.style.display = 'none';
+                resumeRouteBtn.style.display = 'none';
+                mapPlayBtn.style.display = 'block';
+                mapPauseBtn.style.display = 'none';
+            }
+        }
+        
+        // Función para pausar la ruta
+        function pauseRoute() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                isPaused = true;
+                pauseRouteBtn.style.display = 'none';
+                resumeRouteBtn.style.display = 'block';
+                mapPauseBtn.style.display = 'none';
+                mapPlayBtn.style.display = 'block';
+                updateSpeed(0);
+                addLogEntry('Recorrido pausado');
+                showNotification('Recorrido pausado', 'pause');
+            }
+        }
+        
+        // Función para reanudar la ruta
+        function resumeRoute() {
+            if (isPaused && routeCoordinates.length > 0) {
+                isPaused = false;
+                pauseRouteBtn.style.display = 'block';
+                resumeRouteBtn.style.display = 'none';
+                mapPauseBtn.style.display = 'block';
+                mapPlayBtn.style.display = 'none';
+                addLogEntry('Recorrido reanudado');
+                showNotification('Recorrido reanudado', 'play');
+                
+                // Continuar simulación desde donde se pausó
+                startRouteSimulation(false);
+            }
+        }
+        
+        // Función para centrar el mapa en el robot
+        function centerMapOnRobot() {
+            if (currentMarker) {
+                const position = currentMarker.getLatLng();
+                map.setView(position, map.getZoom());
+                addLogEntry('Mapa centrado en la posición del robot');
+            }
+        }
+        
+        // Función para alternar pantalla completa del mapa
+        function toggleMapFullscreen() {
+            const mapContainer = document.getElementById('map-container');
+            
+            if (!document.fullscreenElement) {
+                // Entrar en pantalla completa
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                } else if (mapContainer.msRequestFullscreen) {
+                    mapContainer.msRequestFullscreen();
+                }
+            } else {
+                // Salir de pantalla completa
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // Escuchar cambios en el estado de pantalla completa
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const mapContainer = document.getElementById('map-container');
+            isMapFullscreen = !!document.fullscreenElement;
+            
+            if (isMapFullscreen) {
+                mapExpandBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                mapExpandBtn.title = 'Salir de pantalla completa';
+            } else {
+                mapExpandBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                mapExpandBtn.title = 'Pantalla completa';
+            }
+            
+            // Actualizar el tamaño del mapa
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
+        }
+        
+        // Función para simular estado de conexión
+        function simulateConnectionStatus() {
+            // Simular cambios aleatorios en el estado de conexión
+            if (Math.random() < 0.05) { // 5% de probabilidad de cambio
+                connectionStatus = !connectionStatus;
+                
+                if (connectionStatus) {
+                    connectionStatusElement.className = 'connection-dot';
+                    connectionTextElement.textContent = 'LORA WAN: Conectado';
+                    addLogEntry('Conexión LORA WAN restablecida');
+                    showNotification('Conexión restablecida', 'signal');
+                } else {
+                    connectionStatusElement.className = 'connection-dot error';
+                    connectionTextElement.textContent = 'LORA WAN: Desconectado';
+                    addLogEntry('Pérdida de conexión LORA WAN');
+                    showNotification('Conexión perdida', 'signal');
+                }
+            }
+            
+            // Simular cambios en temperatura y ventilación
+            temperature = Math.max(30, Math.min(50, temperature + (Math.random() - 0.5)));
+            ventilation = Math.max(50, Math.min(100, ventilation + (Math.random() - 0.5) * 10));
+            
+            temperatureElement.textContent = `${temperature.toFixed(0)}°C`;
+            ventilationElement.textContent = `${ventilation.toFixed(0)}%`;
+            
+            // Simular cambios aleatorios en el estado de los componentes
+            simulateComponentStatus();
+            
+            // Programar próxima actualización
+            setTimeout(simulateConnectionStatus, 5000);
+        }
+        
+        // Función para simular cambios en el estado de los componentes
+        function simulateComponentStatus() {
+            const components = [
+                'motor-dd', 'motor-dt', 'motor-td', 'motor-tt',
+                'arm-m1', 'arm-m2', 'arm-m3', 'arm-m4', 'arm-m5', 'arm-m6'
+            ];
+            
+            components.forEach(component => {
+                if (Math.random() < 0.02) { // 2% de probabilidad de cambio
+                    const element = document.getElementById(component);
+                    const status = Math.random();
+                    
+                    if (status < 0.7) {
+                        element.className = 'component-value ok';
+                        element.textContent = 'OK';
+                    } else if (status < 0.9) {
+                        element.className = 'component-value warning';
+                        element.textContent = 'WARN';
+                    } else {
+                        element.className = 'component-value error';
+                        element.textContent = 'ERR';
+                    }
+                }
+            });
+        }
+        
+        // Función para mostrar recolección de botella en tiempo real
+        function showBottleCollection(weight) {
+            // Mostrar indicador flotante
+            collectionWeightElement.textContent = weight.toFixed(2);
+            collectionIndicator.classList.add('show');
+            
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                collectionIndicator.classList.remove('show');
+            }, 3000);
+            
+            // Actualizar lista de botellas recogidas
+            const now = new Date();
+            const timeString = formatTime(now);
+            const randomStreet = streets[Math.floor(Math.random() * streets.length)];
+            
+            bottleCollectionLog.unshift({
+                time: timeString,
+                location: randomStreet,
+                weight: weight
+            });
+            
+            // Mantener solo las 5 últimas entradas
+            if (bottleCollectionLog.length > 5) {
+                bottleCollectionLog.pop();
+            }
+            
+            // Actualizar la vista
+            updateBottleCollectionView();
+        }
+        
+        // Función para actualizar la vista de botellas recogidas
+        function updateBottleCollectionView() {
+            bottleCollectionElement.innerHTML = '';
+            
+            if (bottleCollectionLog.length === 0) {
+                bottleCollectionElement.innerHTML = `
+                    <div class="bottle-item">
+                        <i class="fas fa-wine-bottle bottle-icon"></i>
+                        <div class="bottle-info">
+                            <div class="bottle-location">Esperando recolección...</div>
+                            <div class="bottle-time">Aún no se han recogido botellas</div>
+                        </div>
+                        <div class="bottle-weight">0.00 kg</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            bottleCollectionLog.forEach(bottle => {
+                const bottleItem = document.createElement('div');
+                bottleItem.className = 'bottle-item';
+                bottleItem.innerHTML = `
+                    <i class="fas fa-wine-bottle bottle-icon"></i>
+                    <div class="bottle-info">
+                        <div class="bottle-location">${bottle.location}</div>
+                        <div class="bottle-time">${bottle.time}</div>
+                    </div>
+                    <div class="bottle-weight">${bottle.weight.toFixed(2)} kg</div>
+                `;
+                bottleCollectionElement.appendChild(bottleItem);
+            });
+        }
+        
+        // Función para calcular una ruta (simulada) según el tipo seleccionado
+        function calculateRoute() {
+            if (isEmergencyStop) {
+                showNotification('No se puede calcular ruta durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isRobotOn) {
+                showNotification('El robot está apagado', 'exclamation-triangle');
+                return;
+            }
+            
+            const destination = destinationInput.value.trim();
+            
+            if (!destination) {
+                showNotification('Por favor, ingresa un destino.', 'exclamation-triangle');
+                return;
+            }
+            
+            // Simular cálculo de ruta
+            addLogEntry(`Calculando ruta ${selectedRouteType} hacia: ${destination}`);
+            
+            // Coordenadas de ejemplo para diferentes tipos de rutas en Lanco
+            const routeTypes = {
+                optimal: [
+                    [-39.456150, -72.768835],
+                    [-39.455568, -72.769672],
+                    [-39.455106, -72.770326],
+                    [-39.454748, -72.770863],
+                    [-39.454714, -72.770903],
+                    [-39.455017, -72.771370],
+                    [-39.455414, -72.772045],
+                    [-39.455423, -72.772121],
+                    [-39.455180, -72.772826],
+                    [-39.454922, -72.773566],
+                    [-39.454594, -72.774349],
+                    [-39.454360, -72.774929],
+                    [-39.454008, -72.775626],
+                    [-39.453861, -72.775937],
+                    [-39.453843, -72.776079],
+                    [-39.453909, -72.776442],
+                    [-39.453890, -72.776562],
+                    [-39.453843, -72.776659],
+                    [-39.453470, -72.777050],
+                    [-39.453223, -72.777327],
+                    [-39.453186, -72.777367],
+                    [-39.453130, -72.777286],
+                    [-39.452799, -72.776742],
+                    [-39.452532, -72.776369],
+                    [-39.452511, -72.776294],
+                    [-39.452451, -72.776197],
+                    [-39.452161, -72.775755],
+                    [-39.451840, -72.775269],
+                    [-39.451813, -72.775221],
+                    [-39.452155, -72.774859],
+                    [-39.452188, -72.774813],
+                    [-39.452422, -72.775208],
+                    [-39.452633, -72.775524],
+                    [-39.452310, -72.775484],
+                    [-39.452159, -72.775479]
+                ],
+                shortest: [
+                    [-39.456150, -72.768835],
+                    [-39.456419, -72.768441],
+                    [-39.456794, -72.767877],
+                    [-39.456746, -72.767810],
+                    [-39.456522, -72.767467],
+                    [-39.456191, -72.766957],
+                    [-39.456156, -72.766906],
+                    [-39.455827, -72.766375],
+                    [-39.455549, -72.765960],
+                    [-39.455106, -72.765265],
+                    [-39.455089, -72.765233],
+                    [-39.455046, -72.765171],
+                    [-39.454803, -72.764790],
+                    [-39.454750, -72.764715],
+                    [-39.454480, -72.764280],
+                    [-39.454435, -72.764213],
+                    [-39.454244, -72.763913],
+                    [-39.454199, -72.763838],
+                    [-39.454002, -72.763521],
+                    [-39.453952, -72.763583],
+                    [-39.453913, -72.763521],
+                    [-39.453890, -72.763543],
+                    [-39.453778, -72.763728],
+                    [-39.453648, -72.763996],
+                    [-39.453524, -72.764114],
+                    [-39.453466, -72.764433],
+                    [-39.453393, -72.764511],
+                    [-39.453267, -72.764777],
+                    [-39.453031, -72.765200],
+                    [-39.453008, -72.765380],
+                    [-39.452884, -72.765613],
+                    [-39.452741, -72.765855],
+                    [-39.452705, -72.766021],
+                    [-39.452664, -72.766110],
+                    [-39.452552, -72.766171],
+                    [-39.452101, -72.767067],
+                    [-39.452047, -72.767156],
+                    [-39.451790, -72.767690],
+                    [-39.451506, -72.768312],
+                    [-39.451324, -72.768644],
+                    [-39.451206, -72.768993],
+                    [-39.451024, -72.769310],
+                    [-39.450960, -72.769476],
+                    [-39.450947, -72.769613],
+                    [-39.450999, -72.769709],
+                    [-39.450726, -72.770299],
+                    [-39.450458, -72.770865],
+                    [-39.450407, -72.770983],
+                    [-39.450112, -72.771576],
+                    [-39.449870, -72.772053],
+                    [-39.449831, -72.772142],
+                    [-39.449775, -72.772244],
+                    [-39.449591, -72.771986],
+                    [-39.449299, -72.772622],
+                    [-39.449062, -72.773132],
+                    [-39.449021, -72.773218],
+                    [-39.448857, -72.773757],
+                    [-39.448752, -72.774237],
+                    [-39.448702, -72.774781],
+                    [-39.448986, -72.775151],
+                    [-39.449423, -72.775857],
+                    [-39.449487, -72.775951],
+                    [-39.450102, -72.776940],
+                    [-39.450152, -72.777008],
+                    [-39.450740, -72.777893],
+                    [-39.450769, -72.778013],
+                    [-39.450837, -72.778072],
+                    [-39.451479, -72.779084],
+                    [-39.451807, -72.778713],
+                    [-39.452217, -72.778260],
+                    [-39.452283, -72.778209],
+                    [-39.452631, -72.777823],
+                    [-39.453051, -72.777362],
+                    [-39.453130, -72.777286],
+                    [-39.452523, -72.776286],
+                    [-39.452455, -72.776230],
+                    [-39.452627, -72.776042],
+                    [-39.452797, -72.775819],
+                    [-39.452488, -72.775339],
+                    [-39.452179, -72.774827],
+                    [-39.451997, -72.775025],
+                    [-39.451813, -72.775218],
+                    [-39.451993, -72.775516],
+                    [-39.452175, -72.775495]
+                ],
+                ecologic: [
+                    [-39.456150, -72.768835],
+                    [-39.456102, -72.768730],
+                    [-39.455522, -72.769556],
+                    [-39.455085, -72.769063],
+                    [-39.454696, -72.768588],
+                    [-39.454638, -72.768521],
+                    [-39.454277, -72.768049],
+                    [-39.453956, -72.767657],
+                    [-39.453395, -72.767019],
+                    [-39.453370, -72.766957],
+                    [-39.453312, -72.766904],
+                    [-39.453002, -72.766617],
+                    [-39.452952, -72.766566],
+                    [-39.452712, -72.767062],
+                    [-39.452480, -72.767545],
+                    [-39.452244, -72.767215],
+                    [-39.452204, -72.767164],
+                    [-39.451904, -72.766917],
+                    [-39.451834, -72.766904],
+                    [-39.451510, -72.766595]
+                ]
+            };
+            
+            routeCoordinates = routeTypes[selectedRouteType];
+            
+            // Calcular distancia total
+            totalDistance = 0;
+            for (let i = 0; i < routeCoordinates.length - 1; i++) {
+                const [lat1, lng1] = routeCoordinates[i];
+                const [lat2, lng2] = routeCoordinates[i + 1];
+                totalDistance += calculateDistance(lat1, lng1, lat2, lng2);
+            }
+            
+            // Dibujar la ruta en el mapa
+            if (currentRoute) {
+                map.removeLayer(currentRoute);
+            }
+            
+            const routeColor = selectedRouteType === 'optimal' ? '#007aff' : 
+                              selectedRouteType === 'shortest' ? '#34c759' : '#ff9500';
+            
+            currentRoute = L.polyline(routeCoordinates, {color: routeColor, weight: 5}).addTo(map);
+            map.fitBounds(currentRoute.getBounds());
+            
+            // Calcular valores simulados según el tipo de ruta
+            const timeMultipliers = {optimal: 1.5, shortest: 1.2, ecologic: 1.8};
+            const travelTime = Math.round(routeCoordinates.length * timeMultipliers[selectedRouteType]);
+            timeElement.textContent = `${travelTime} min`;
+            
+            // Calcular batería estimada a consumir (aproximadamente 2% por km)
+            batteryConsumed = Math.min(100, Math.round(totalDistance * 2));
+            
+            // Calcular hora estimada de finalización
+            const now = new Date();
+            startTime = now;
+            estimatedEndTime = new Date(now.getTime() + travelTime * 60000);
+            
+            startTimeElement.textContent = formatTime(now);
+            endTimeElement.textContent = formatTime(estimatedEndTime);
+            distanceElement.textContent = `${totalDistance.toFixed(2)} km`;
+            batteryConsumedElement.textContent = `${batteryConsumed}%`;
+            
+            // Mostrar el botón de iniciar ruta
+            startRouteBtn.style.display = 'block';
+            pauseRouteBtn.style.display = 'none';
+            resumeRouteBtn.style.display = 'none';
+            mapPlayBtn.style.display = 'block';
+            mapPauseBtn.style.display = 'none';
+            
+            // Actualizar información de progreso
+            updateNavigationInfo();
+            
+            addLogEntry(`Ruta ${selectedRouteType} calculada. Tiempo estimado: ${travelTime} minutos.`);
+            showNotification(`Ruta ${selectedRouteType} calculada correctamente`, 'check-circle');
+        }
+        
+        // Función para simular el movimiento del robot
+        function startRouteSimulation(fromBeginning = true) {
+            if (isEmergencyStop) {
+                showNotification('No se puede iniciar durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isRobotOn) {
+                showNotification('El robot está apagado', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isWheelsOn) {
+                showNotification('Los motores de ruedas están apagados', 'exclamation-triangle');
+                return;
+            }
+            
+            if (routeCoordinates.length === 0) {
+                showNotification('Primero calcula una ruta.', 'exclamation-triangle');
+                return;
+            }
+            
+            addLogEntry(fromBeginning ? 'Iniciando recorrido del robot.' : 'Reanudando recorrido del robot.');
+            calculateRouteBtn.disabled = true;
+            startRouteBtn.disabled = true;
+            programmedRouteBtn.disabled = true;
+            pauseRouteBtn.style.display = 'block';
+            resumeRouteBtn.style.display = 'none';
+            mapPlayBtn.style.display = 'none';
+            mapPauseBtn.style.display = 'block';
+            
+            // Reiniciar estadísticas si es desde el principio
+            if (fromBeginning) {
+                traveledDistance = 0;
+                usedBattery = 0;
+                currentRouteIndex = 0;
+                initialBattery = batteryLevel;
+            }
+            
+            // Actualizar estadísticas iniciales
+            kmTraveledElement.textContent = traveledDistance.toFixed(2);
+            batteryUsedElement.textContent = `${usedBattery}%`;
+            updateSpeed(5); // Velocidad inicial
+            updateNavigationInfo();
+            
+            // Simular movimiento a lo largo de la ruta
+            simulationInterval = setInterval(() => {
+                if (currentRouteIndex >= routeCoordinates.length) {
+                    // Llegó al destino
+                    clearInterval(simulationInterval);
+                    simulationInterval = null;
+                    addLogEntry('El robot ha llegado al destino.');
+                    updateSpeed(0);
+                    
+                    // Simular recolección de botellas
+                    const collectedBottles = Math.floor(Math.random() * 10) + 5;
+                    const collectedWeight = (collectedBottles * 0.05).toFixed(2); // 50g por botella
+                    
+                    petBottles += collectedBottles;
+                    petWeight += parseFloat(collectedWeight);
+                    
+                    bottlesElement.textContent = petBottles;
+                    weightElement.textContent = `${petWeight.toFixed(2)} kg`;
+                    capacityElement.textContent = `${petBottles}/${maxCapacity}`;
+                    mapBottlesElement.textContent = petBottles;
+                    mapWeightElement.textContent = petWeight.toFixed(1);
+                    
+                    addLogEntry(`Recolectadas ${collectedBottles} botellas PET (${collectedWeight} kg).`);
+                    showNotification(`Recolectadas ${collectedBottles} botellas PET`, 'wine-bottle');
+                    
+                    calculateRouteBtn.disabled = false;
+                    startRouteBtn.disabled = false;
+                    programmedRouteBtn.disabled = false;
+                    pauseRouteBtn.style.display = 'none';
+                    return;
+                }
+                
+                // Calcular ángulo de dirección si no es el último punto
+                if (currentRouteIndex < routeCoordinates.length - 1) {
+                    const currentCoord = routeCoordinates[currentRouteIndex];
+                    const nextCoord = routeCoordinates[currentRouteIndex + 1];
+                    currentAngle = calculateAngle(currentCoord, nextCoord);
+                    
+                    // Actualizar el ícono con la nueva dirección
+                    currentMarker.setIcon(createRobotIcon(currentAngle));
+                    
+                    // Calcular distancia recorrida en este segmento
+                    const segmentDistance = calculateDistance(
+                        currentCoord[0], currentCoord[1],
+                        nextCoord[0], nextCoord[1]
+                    );
+                    traveledDistance += segmentDistance;
+                    
+                    // Calcular batería usada (aproximadamente 2% por km)
+                    usedBattery = Math.min(100, Math.round(traveledDistance * 2));
+                    batteryLevel = initialBattery - usedBattery;
+                    
+                    // Actualizar estadísticas
+                    kmTraveledElement.textContent = traveledDistance.toFixed(2);
+                    batteryUsedElement.textContent = `${usedBattery}%`;
+                    batteryElement.textContent = `${batteryLevel}%`;
+                    mapBatteryElement.textContent = `${batteryLevel}%`;
+                    
+                    // Simular cambio de velocidad (entre 3 y 8 km/h)
+                    const newSpeed = 3 + Math.floor(Math.random() * 6);
+                    updateSpeed(newSpeed);
+                    
+                    // Verificar límite de velocidad según ubicación
+                    checkSpeedLimit(currentCoord[0], currentCoord[1]);
+                    
+                    // Actualizar información de navegación
+                    updateNavigationInfo();
+                    
+                    // Simular recolección de botella ocasionalmente
+                    if (isArmActive && isArmMotorsOn && Math.random() < 0.2) {
+                        const bottleWeight = 0.05 + (Math.random() * 0.05); // Entre 50g y 100g
+                        petBottles++;
+                        petWeight += bottleWeight;
+                        
+                        bottlesElement.textContent = petBottles;
+                        weightElement.textContent = `${petWeight.toFixed(2)} kg`;
+                        capacityElement.textContent = `${petBottles}/${maxCapacity}`;
+                        mapBottlesElement.textContent = petBottles;
+                        mapWeightElement.textContent = petWeight.toFixed(1);
+                        
+                        // Mostrar indicador de recolección
+                        showBottleCollection(bottleWeight);
+                        
+                        addLogEntry(`Botella recogida: ${bottleWeight.toFixed(2)} kg. Total: ${petBottles} botellas.`);
+                    }
+                    
+                    // Simular indicador de giro ocasionalmente
+                    if (Math.random() < 0.1 && currentRouteIndex % 5 === 0) {
+                        const direction = Math.random() < 0.5 ? 'left' : 'right';
+                        const randomStreet = streets[Math.floor(Math.random() * streets.length)];
+                        const distanceToTurn = (totalDistance - traveledDistance);
+                        showTurnIndicator(direction, distanceToTurn.toFixed(1), randomStreet);
+                    }
+                }
+                
+                // Mover el marcador a la siguiente coordenada
+                const nextCoord = routeCoordinates[currentRouteIndex];
+                currentMarker.setLatLng(nextCoord);
+                
+                // Actualizar el popup con información de progreso
+                const progress = Math.round((currentRouteIndex / (routeCoordinates.length - 1)) * 100);
+                currentMarker.bindPopup(`
+                    <strong>EcoBot-247 en camino</strong><br>
+                    ${progress}% completado<br>
+                    Ruta: ${selectedRouteType}<br>
+                    Velocidad: ${currentSpeed} km/h<br>
+                    Dirección: ${Math.round(currentAngle)}°<br>
+                    Distancia: ${traveledDistance.toFixed(2)} km<br>
+                    Botellas: ${petBottles}<br>
+                    Peso: ${petWeight.toFixed(2)} kg
+                `).openPopup();
+                
+                currentRouteIndex++;
+                
+            }, 1500); // Actualizar cada 1.5 segundos
+        }
+        
+        // Función para detener la simulación
+        function stopSimulation() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+            }
+            updateSpeed(0);
+            addLogEntry('Recorrido detenido');
+            showNotification('Recorrido detenido', 'stop');
+            
+            calculateRouteBtn.disabled = false;
+            startRouteBtn.disabled = false;
+            programmedRouteBtn.disabled = false;
+            pauseRouteBtn.style.display = 'none';
+            resumeRouteBtn.style.display = 'none';
+            mapPlayBtn.style.display = 'block';
+            mapPauseBtn.style.display = 'none';
+        }
+        
+        // Función para cargar una ruta programada
+        function loadProgrammedRoute() {
+            if (isEmergencyStop) {
+                showNotification('No se puede cargar ruta durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isRobotOn) {
+                showNotification('El robot está apagado', 'exclamation-triangle');
+                return;
+            }
+            
+            // Simular carga de ruta programada
+            addLogEntry('Cargando ruta programada...');
+            
+            // Establecer valores de ejemplo para ruta programada
+            currentLocationInput.value = 'Municipalidad de Lanco';
+            destinationInput.value = 'Centro de Acopio Reciclaje';
+            selectedRouteType = 'optimal';
+            
+            // Actualizar selección visual de ruta
+            routeOptions.forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.route === selectedRouteType) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Calcular la ruta automáticamente
+            calculateRoute();
+            
+            showNotification('Ruta programada cargada correctamente', 'calendar-check');
+        }
+        
+        // Función para control manual del robot
+        function manualControl(direction) {
+            if (isEmergencyStop) {
+                showNotification('No se puede controlar manualmente durante parada de emergencia', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isRobotOn) {
+                showNotification('El robot está apagado', 'exclamation-triangle');
+                return;
+            }
+            
+            if (!isWheelsOn) {
+                showNotification('Los motores de ruedas están apagados', 'exclamation-triangle');
+                return;
+            }
+            
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                calculateRouteBtn.disabled = false;
+                startRouteBtn.disabled = false;
+                programmedRouteBtn.disabled = false;
+                pauseRouteBtn.style.display = 'none';
+                resumeRouteBtn.style.display = 'none';
+                mapPlayBtn.style.display = 'block';
+                mapPauseBtn.style.display = 'none';
+            }
+            
+            isManualControl = true;
+            
+            // Obtener la posición actual
+            const currentPos = currentMarker.getLatLng();
+            
+            // Calcular nueva posición según la dirección
+            let newLat = currentPos.lat;
+            let newLng = currentPos.lng;
+            let newAngle = currentAngle;
+            
+            switch(direction) {
+                case 'forward':
+                    newLat += 0.0001;
+                    newAngle = 0;
+                    updateSpeed(3);
+                    break;
+                case 'backward':
+                    newLat -= 0.0001;
+                    newAngle = 180;
+                    updateSpeed(2);
+                    break;
+                case 'left':
+                    newLng -= 0.0001;
+                    newAngle = 270;
+                    updateSpeed(2);
+                    break;
+                case 'right':
+                    newLng += 0.0001;
+                    newAngle = 90;
+                    updateSpeed(2);
+                    break;
+                case 'stop':
+                    updateSpeed(0);
+                    addLogEntry('Robot detenido por control manual');
+                    return;
+            }
+            
+            // Verificar límite de velocidad según ubicación
+            checkSpeedLimit(newLat, newLng);
+            
+            // Actualizar posición y ángulo
+            currentMarker.setLatLng([newLat, newLng]);
+            currentMarker.setIcon(createRobotIcon(newAngle));
+            currentAngle = newAngle;
+            
+            // Actualizar el popup
+            currentMarker.bindPopup(`
+                <strong>EcoBot-247 en control manual</strong><br>
+                Dirección: ${direction}<br>
+                Velocidad: ${currentSpeed} km/h<br>
+                Posición: ${newLat.toFixed(6)}, ${newLng.toFixed(6)}<br>
+                Botellas: ${petBottles}<br>
+                Peso: ${petWeight.toFixed(2)} kg
+            `).openPopup();
+            
+            addLogEntry(`Control manual: Movimiento hacia ${direction}`);
+        }
+
+        // Marcador inicial (posición por defecto en Lanco)
+        currentMarker = L.marker([-39.456150, -72.768835], {
+            icon: createRobotIcon(0)
+        }).addTo(map)
+        .bindPopup('<strong>EcoBot-247</strong><br>Robot Recolector PET<br>Ubicación inicial')
+        .openPopup();
+        
+        // Event Listeners
+        calculateRouteBtn.addEventListener('click', calculateRoute);
+        startRouteBtn.addEventListener('click', () => startRouteSimulation(true));
+        pauseRouteBtn.addEventListener('click', pauseRoute);
+        resumeRouteBtn.addEventListener('click', resumeRoute);
+        programmedRouteBtn.addEventListener('click', loadProgrammedRoute);
+        emergencyStopBtn.addEventListener('click', emergencyStop);
+        robotPowerBtn.addEventListener('click', toggleRobotPower);
+        armPowerBtn.addEventListener('click', toggleArmPower);
+        cameraPowerBtn.addEventListener('click', toggleCameraPower);
+        wheelPowerBtn.addEventListener('click', toggleWheelsPower);
+        armMotorPowerBtn.addEventListener('click', toggleArmMotorsPower);
+        mapPlayBtn.addEventListener('click', () => startRouteSimulation(true));
+        mapPauseBtn.addEventListener('click', pauseRoute);
+        mapStopBtn.addEventListener('click', stopSimulation);
+        mapCenterBtn.addEventListener('click', centerMapOnRobot);
+        mapExpandBtn.addEventListener('click', toggleMapFullscreen);
+        
+        // Controles manuales
+        btnForward.addEventListener('click', () => manualControl('forward'));
+        btnBackward.addEventListener('click', () => manualControl('backward'));
+        btnLeft.addEventListener('click', () => manualControl('left'));
+        btnRight.addEventListener('click', () => manualControl('right'));
+        btnStop.addEventListener('click', () => manualControl('stop'));
+        
+        // Selección de tipo de ruta
+        routeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                if (isEmergencyStop) {
+                    showNotification('No se puede cambiar ruta durante parada de emergencia', 'exclamation-triangle');
+                    return;
+                }
+                
+                if (!isRobotOn) {
+                    showNotification('El robot está apagado', 'exclamation-triangle');
+                    return;
+                }
+                
+                routeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                selectedRouteType = option.dataset.route;
+                addLogEntry(`Tipo de ruta cambiado a: ${option.dataset.route}`);
+            });
+        });
+        
+        // Inicializar la aplicación
+        addLogEntry('Sistema de gestión de robot inicializado correctamente.');
+        showNotification('Sistema listo para operar', 'robot');
+        
+        // Inicializar vista de botellas
+        updateBottleCollectionView();
+        
+        // Iniciar simulación de estado de conexión
+        simulateConnectionStatus();
+        
+        // Ocultar botones inicialmente
+        pauseRouteBtn.style.display = 'none';
+        resumeRouteBtn.style.display = 'none';
+        mapPauseBtn.style.display = 'none';
+    </script>
+</body>
+</html>
